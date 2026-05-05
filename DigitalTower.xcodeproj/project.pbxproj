@@ -1,0 +1,522 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		008CE82F84060D342D415B61 /* DigitalTowerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A64B8A631A3817F27F36DAA1 /* DigitalTowerApp.swift */; };
+		01721400AD6FA1C5ADEE2887 /* ImmersiveAirspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C9477B567A47A9504D03A9 /* ImmersiveAirspaceView.swift */; };
+		1F451040F99DC76E3148DBB9 /* AviationDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534C4423910CC010C215F3A4 /* AviationDataProvider.swift */; };
+		3DBBF33F8CFFE296E0330C4E /* AviationDataProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE15CE3976F802B8D630ED3 /* AviationDataProviderTests.swift */; };
+		408235CCC17866C5961F2B84 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AFA00B1B36421474E1E21BE /* ContentView.swift */; };
+		42633AA4F3189635527ADA8F /* AirspaceSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B56F0A2EE01C62B5A667E6C /* AirspaceSceneView.swift */; };
+		42B68C7274DF91548664B2BA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0E38E40BDBDBFDCCFFFC8432 /* Assets.xcassets */; };
+		42D457F44517404022EBDE58 /* DigitalTowerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A418BD99A4BF3E9C9CE8FB /* DigitalTowerModel.swift */; };
+		4E5AB5787ACB4AB429AC97A7 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0B1992982A5256D96CD9CD /* DesignSystem.swift */; };
+		4EC5759EE23CE7CD22E1E884 /* SettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267378FBEFA3F255CB4050D0 /* SettingsPanel.swift */; };
+		58FB631AFA51B65D6C7DAC10 /* ReleaseReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46695445AEA92F20DAFC86A0 /* ReleaseReview.swift */; };
+		651D0A5F3F4B6992848AEE67 /* RightInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568C61F2FE8CF3C35F34FEA2 /* RightInspectorView.swift */; };
+		65FF094EA8A36851042D8CF9 /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22444C4DDDDAF8FF8BD36E79 /* DomainModels.swift */; };
+		7182B211E9B3F09C20BE1CE4 /* AgentSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE79EA6BA0AA13E71499A8B1 /* AgentSystem.swift */; };
+		795B283D1C77960205A002AD /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC3C3C8F1B153EEC100C830 /* SampleData.swift */; };
+		9D68275DD1005ED8EEDDE94C /* BottomControlDock.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4D1C2266DF3B5F93A0A859 /* BottomControlDock.swift */; };
+		AC5C0541C8FDA8628BDA15D7 /* DigitalTowerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EF97EE6DB955A5D59DE50A /* DigitalTowerModelTests.swift */; };
+		BC6F699430595A82191B8C76 /* SideRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CB178031527E4590C33063 /* SideRail.swift */; };
+		DD58F12BEE8B13C1BE09FDCF /* TopCommandBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03576FBD0F753D3EF353F1E0 /* TopCommandBar.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		68804A599EC345B655CB6B6B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AB4AD8F092C2D23E3CD9CDAA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 792F52DBCB280E6CF2708AD7;
+			remoteInfo = DigitalTower;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		03576FBD0F753D3EF353F1E0 /* TopCommandBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TopCommandBar.swift; sourceTree = "<group>"; };
+		0E38E40BDBDBFDCCFFFC8432 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		22444C4DDDDAF8FF8BD36E79 /* DomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainModels.swift; sourceTree = "<group>"; };
+		267378FBEFA3F255CB4050D0 /* SettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPanel.swift; sourceTree = "<group>"; };
+		3AFA00B1B36421474E1E21BE /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		46695445AEA92F20DAFC86A0 /* ReleaseReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseReview.swift; sourceTree = "<group>"; };
+		4E0244AE2869B399B2FC4A61 /* DigitalTowerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DigitalTowerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4FC3C3C8F1B153EEC100C830 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		534C4423910CC010C215F3A4 /* AviationDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AviationDataProvider.swift; sourceTree = "<group>"; };
+		55EF97EE6DB955A5D59DE50A /* DigitalTowerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerModelTests.swift; sourceTree = "<group>"; };
+		568C61F2FE8CF3C35F34FEA2 /* RightInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightInspectorView.swift; sourceTree = "<group>"; };
+		5E0B1992982A5256D96CD9CD /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		6B56F0A2EE01C62B5A667E6C /* AirspaceSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirspaceSceneView.swift; sourceTree = "<group>"; };
+		84A418BD99A4BF3E9C9CE8FB /* DigitalTowerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerModel.swift; sourceTree = "<group>"; };
+		A64B8A631A3817F27F36DAA1 /* DigitalTowerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerApp.swift; sourceTree = "<group>"; };
+		AE79EA6BA0AA13E71499A8B1 /* AgentSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSystem.swift; sourceTree = "<group>"; };
+		BB3BC80580E1CFD3DF1C8864 /* DigitalTower.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DigitalTower.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C7C9477B567A47A9504D03A9 /* ImmersiveAirspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImmersiveAirspaceView.swift; sourceTree = "<group>"; };
+		CDE15CE3976F802B8D630ED3 /* AviationDataProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AviationDataProviderTests.swift; sourceTree = "<group>"; };
+		DD4D1C2266DF3B5F93A0A859 /* BottomControlDock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomControlDock.swift; sourceTree = "<group>"; };
+		E2CB178031527E4590C33063 /* SideRail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideRail.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		00665C8A9CBFD7868FB52176 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				534C4423910CC010C215F3A4 /* AviationDataProvider.swift */,
+				84A418BD99A4BF3E9C9CE8FB /* DigitalTowerModel.swift */,
+				22444C4DDDDAF8FF8BD36E79 /* DomainModels.swift */,
+				4FC3C3C8F1B153EEC100C830 /* SampleData.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		1F1F5AB1A851D07ACD93145F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0E38E40BDBDBFDCCFFFC8432 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		469DACC7037A2D69D9D32311 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				6B56F0A2EE01C62B5A667E6C /* AirspaceSceneView.swift */,
+				DD4D1C2266DF3B5F93A0A859 /* BottomControlDock.swift */,
+				3AFA00B1B36421474E1E21BE /* ContentView.swift */,
+				5E0B1992982A5256D96CD9CD /* DesignSystem.swift */,
+				C7C9477B567A47A9504D03A9 /* ImmersiveAirspaceView.swift */,
+				568C61F2FE8CF3C35F34FEA2 /* RightInspectorView.swift */,
+				267378FBEFA3F255CB4050D0 /* SettingsPanel.swift */,
+				E2CB178031527E4590C33063 /* SideRail.swift */,
+				03576FBD0F753D3EF353F1E0 /* TopCommandBar.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		9B781D55905F9025EB49747A = {
+			isa = PBXGroup;
+			children = (
+				CACED80AFAA2E9C1AE39C3BC /* DigitalTower */,
+				D913DB9F06B8D2D9BFAACA5D /* DigitalTowerTests */,
+				CCC9DCFF1CF5A04E82A9D3EE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CACED80AFAA2E9C1AE39C3BC /* DigitalTower */ = {
+			isa = PBXGroup;
+			children = (
+				A64B8A631A3817F27F36DAA1 /* DigitalTowerApp.swift */,
+				DDD3284320011D7A789832BB /* Agents */,
+				00665C8A9CBFD7868FB52176 /* Models */,
+				1F1F5AB1A851D07ACD93145F /* Resources */,
+				469DACC7037A2D69D9D32311 /* Views */,
+			);
+			path = DigitalTower;
+			sourceTree = "<group>";
+		};
+		CCC9DCFF1CF5A04E82A9D3EE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BB3BC80580E1CFD3DF1C8864 /* DigitalTower.app */,
+				4E0244AE2869B399B2FC4A61 /* DigitalTowerTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		D913DB9F06B8D2D9BFAACA5D /* DigitalTowerTests */ = {
+			isa = PBXGroup;
+			children = (
+				CDE15CE3976F802B8D630ED3 /* AviationDataProviderTests.swift */,
+				55EF97EE6DB955A5D59DE50A /* DigitalTowerModelTests.swift */,
+			);
+			path = DigitalTowerTests;
+			sourceTree = "<group>";
+		};
+		DDD3284320011D7A789832BB /* Agents */ = {
+			isa = PBXGroup;
+			children = (
+				AE79EA6BA0AA13E71499A8B1 /* AgentSystem.swift */,
+				46695445AEA92F20DAFC86A0 /* ReleaseReview.swift */,
+			);
+			path = Agents;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		792F52DBCB280E6CF2708AD7 /* DigitalTower */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57BB2876F7F851C392C53256 /* Build configuration list for PBXNativeTarget "DigitalTower" */;
+			buildPhases = (
+				F741B9D2291FDFE19D35BF46 /* Sources */,
+				B4A6373E32597B5643CAD6CF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DigitalTower;
+			packageProductDependencies = (
+			);
+			productName = DigitalTower;
+			productReference = BB3BC80580E1CFD3DF1C8864 /* DigitalTower.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AF1DD8E4C818C41DA5074CDF /* DigitalTowerTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 098CF191DC92D903692C1499 /* Build configuration list for PBXNativeTarget "DigitalTowerTests" */;
+			buildPhases = (
+				54CB94C274B3CF93A0655456 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3F86E47BF0BCF2CE60609C0A /* PBXTargetDependency */,
+			);
+			name = DigitalTowerTests;
+			packageProductDependencies = (
+			);
+			productName = DigitalTowerTests;
+			productReference = 4E0244AE2869B399B2FC4A61 /* DigitalTowerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AB4AD8F092C2D23E3CD9CDAA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					792F52DBCB280E6CF2708AD7 = {
+						DevelopmentTeam = "$(DEVELOPMENT_TEAM)";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 15F4E7A202353A2831EA4601 /* Build configuration list for PBXProject "DigitalTower" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9B781D55905F9025EB49747A;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				792F52DBCB280E6CF2708AD7 /* DigitalTower */,
+				AF1DD8E4C818C41DA5074CDF /* DigitalTowerTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B4A6373E32597B5643CAD6CF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				42B68C7274DF91548664B2BA /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		54CB94C274B3CF93A0655456 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3DBBF33F8CFFE296E0330C4E /* AviationDataProviderTests.swift in Sources */,
+				AC5C0541C8FDA8628BDA15D7 /* DigitalTowerModelTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F741B9D2291FDFE19D35BF46 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7182B211E9B3F09C20BE1CE4 /* AgentSystem.swift in Sources */,
+				42633AA4F3189635527ADA8F /* AirspaceSceneView.swift in Sources */,
+				1F451040F99DC76E3148DBB9 /* AviationDataProvider.swift in Sources */,
+				9D68275DD1005ED8EEDDE94C /* BottomControlDock.swift in Sources */,
+				408235CCC17866C5961F2B84 /* ContentView.swift in Sources */,
+				4E5AB5787ACB4AB429AC97A7 /* DesignSystem.swift in Sources */,
+				008CE82F84060D342D415B61 /* DigitalTowerApp.swift in Sources */,
+				42D457F44517404022EBDE58 /* DigitalTowerModel.swift in Sources */,
+				65FF094EA8A36851042D8CF9 /* DomainModels.swift in Sources */,
+				01721400AD6FA1C5ADEE2887 /* ImmersiveAirspaceView.swift in Sources */,
+				58FB631AFA51B65D6C7DAC10 /* ReleaseReview.swift in Sources */,
+				651D0A5F3F4B6992848AEE67 /* RightInspectorView.swift in Sources */,
+				795B283D1C77960205A002AD /* SampleData.swift in Sources */,
+				4EC5759EE23CE7CD22E1E884 /* SettingsPanel.swift in Sources */,
+				BC6F699430595A82191B8C76 /* SideRail.swift in Sources */,
+				DD58F12BEE8B13C1BE09FDCF /* TopCommandBar.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3F86E47BF0BCF2CE60609C0A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 792F52DBCB280E6CF2708AD7 /* DigitalTower */;
+			targetProxy = 68804A599EC345B655CB6B6B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		496A02FA9221316F70BF73B0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.digitaltower.tests;
+				SDKROOT = xros;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DigitalTower.app/DigitalTower";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		4B006E96C448B6F111FD86D3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = xros;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+		4E54E1BF8878B0D28CF411BA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_AVIATION_API_BASE_URL = "$(AVIATION_API_BASE_URL)";
+				INFOPLIST_KEY_AVIATION_API_TOKEN = "$(AVIATION_API_TOKEN)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Tower";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.digitaltower.vision;
+				PRODUCT_NAME = DigitalTower;
+				SDKROOT = xros;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		8A8921D3D8FB620562FF65F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.digitaltower.tests;
+				SDKROOT = xros;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 7;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DigitalTower.app/DigitalTower";
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		B66F293AC078C181821F5D8D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = xros;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Release;
+		};
+		D86249EA42D0AA300F15B51D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_AVIATION_API_BASE_URL = "$(AVIATION_API_BASE_URL)";
+				INFOPLIST_KEY_AVIATION_API_TOKEN = "$(AVIATION_API_TOKEN)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Tower";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.digitaltower.vision;
+				PRODUCT_NAME = DigitalTower;
+				SDKROOT = xros;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 7;
+				XROS_DEPLOYMENT_TARGET = 2.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		098CF191DC92D903692C1499 /* Build configuration list for PBXNativeTarget "DigitalTowerTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				496A02FA9221316F70BF73B0 /* Debug */,
+				8A8921D3D8FB620562FF65F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		15F4E7A202353A2831EA4601 /* Build configuration list for PBXProject "DigitalTower" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4B006E96C448B6F111FD86D3 /* Debug */,
+				B66F293AC078C181821F5D8D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		57BB2876F7F851C392C53256 /* Build configuration list for PBXNativeTarget "DigitalTower" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D86249EA42D0AA300F15B51D /* Debug */,
+				4E54E1BF8878B0D28CF411BA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = AB4AD8F092C2D23E3CD9CDAA /* Project object */;
+}

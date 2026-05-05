@@ -1,0 +1,43 @@
+name: DigitalTower
+options:
+  bundleIdPrefix: com.digitaltower
+  deploymentTarget:
+    visionOS: "2.0"
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: YES
+targets:
+  DigitalTower:
+    type: application
+    platform: visionOS
+    deploymentTarget: "2.0"
+    sources:
+      - path: DigitalTower
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.digitaltower.vision
+        PRODUCT_NAME: DigitalTower
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Digital Tower
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_AVIATION_API_BASE_URL: $(AVIATION_API_BASE_URL)
+        INFOPLIST_KEY_AVIATION_API_TOKEN: $(AVIATION_API_TOKEN)
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 2
+        SUPPORTS_MACCATALYST: NO
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: $(DEVELOPMENT_TEAM)
+  DigitalTowerTests:
+    type: bundle.unit-test
+    platform: visionOS
+    deploymentTarget: "2.0"
+    sources:
+      - path: DigitalTowerTests
+    dependencies:
+      - target: DigitalTower
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.digitaltower.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: 6.0
