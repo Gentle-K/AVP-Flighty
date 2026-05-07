@@ -9,12 +9,14 @@ struct DigitalTowerApp: App {
             ContentView()
                 .environmentObject(model)
         }
-        .defaultSize(width: 1_672, height: 941)
+        .defaultSize(width: 620, height: 720)
+        .windowResizability(.contentSize)
+        .windowStyle(.plain)
 
         ImmersiveSpace(id: DigitalTowerModel.immersiveSpaceID) {
             ImmersiveAirspaceView()
                 .environmentObject(model)
         }
-        .immersionStyle(selection: .constant(.mixed), in: .mixed, .progressive, .full)
+        .immersionStyle(selection: .constant(.full), in: .full)
     }
 }

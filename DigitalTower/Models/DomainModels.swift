@@ -44,6 +44,185 @@ enum AirspaceMode: String, CaseIterable, Identifiable {
     }
 }
 
+enum ExperienceMode: String, CaseIterable, Identifiable, Hashable, Sendable {
+    case skyPortal
+    case digitalTower
+    case nearbySky
+    case flightChase
+    case globe
+    case replay
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .skyPortal: "Sky Portal"
+        case .digitalTower: "Digital Tower"
+        case .nearbySky: "Nearby Sky"
+        case .flightChase: "Flight Chase"
+        case .globe: "Globe"
+        case .replay: "Replay"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .skyPortal: "Cinematic entry airspace"
+        case .digitalTower: "Airport tower environment"
+        case .nearbySky: "Room-scale traffic bubble"
+        case .flightChase: "Follow a selected aircraft"
+        case .globe: "Global traffic arcs"
+        case .replay: "Traffic playback"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .skyPortal: "sparkles"
+        case .digitalTower: "building.columns"
+        case .nearbySky: "scope"
+        case .flightChase: "airplane"
+        case .globe: "globe.americas"
+        case .replay: "clock.arrow.circlepath"
+        }
+    }
+
+    var legacyMode: AirspaceMode {
+        switch self {
+        case .skyPortal, .nearbySky, .globe:
+            return .live
+        case .digitalTower:
+            return .tower
+        case .flightChase:
+            return .flight
+        case .replay:
+            return .replay
+        }
+    }
+
+    static func fromLegacyMode(_ mode: AirspaceMode) -> ExperienceMode {
+        switch mode {
+        case .live:
+            return .nearbySky
+        case .tower:
+            return .digitalTower
+        case .flight:
+            return .flightChase
+        case .weather:
+            return .nearbySky
+        case .replay:
+            return .replay
+        case .alerts:
+            return .digitalTower
+        }
+    }
+}
+
+enum SceneScalePreset: String, CaseIterable, Identifiable, Hashable, Sendable {
+    case tabletopAirport
+    case roomScaleAirport
+    case fullSky
+    case globe
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .tabletopAirport: "Tabletop"
+        case .roomScaleAirport: "Room"
+        case .fullSky: "Full Sky"
+        case .globe: "Globe"
+        }
+    }
+
+    var horizontalMetersPerSceneMeter: Float {
+        switch self {
+        case .tabletopAirport: 5_400
+        case .roomScaleAirport: 2_400
+        case .fullSky: 3_200
+        case .globe: 8_000
+        }
+    }
+
+    var feetPerSceneMeter: Float {
+        switch self {
+        case .tabletopAirport: 18_000
+        case .roomScaleAirport: 9_000
+        case .fullSky: 11_000
+        case .globe: 30_000
+        }
+    }
+
+    var distanceClamp: Float {
+        switch self {
+        case .tabletopAirport: 1.35
+        case .roomScaleAirport: 3.3
+        case .fullSky: 4.8
+        case .globe: 1.8
+        }
+    }
+}
+
+enum AircraftDensity: String, CaseIterable, Identifiable, Hashable, Sendable {
+    case low
+    case medium
+    case high
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .low: "Low"
+        case .medium: "Medium"
+        case .high: "High"
+        }
+    }
+
+    var visibleLimit: Int {
+        switch self {
+        case .low: 14
+        case .medium: 28
+        case .high: 48
+        }
+    }
+}
+
+enum LabelDensity: String, CaseIterable, Identifiable, Hashable, Sendable {
+    case minimal
+    case focused
+    case expanded
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .minimal: "Minimal"
+        case .focused: "Focused"
+        case .expanded: "Expanded"
+        }
+    }
+}
+
+struct FlightRegion: Hashable, Sendable {
+    let centerLatitude: Double
+    let centerLongitude: Double
+    let radiusNauticalMiles: Double
+    let airportCode: String?
+
+    init(centerLatitude: Double, centerLongitude: Double, radiusNauticalMiles: Double, airportCode: String? = nil) {
+        self.centerLatitude = centerLatitude
+        self.centerLongitude = centerLongitude
+        self.radiusNauticalMiles = radiusNauticalMiles
+        self.airportCode = airportCode
+    }
+}
+
+struct ReplayQuery: Hashable, Sendable {
+    let airportCode: String
+    let from: Date
+    let to: Date
+}
+
 enum AirspaceOverlay: String, CaseIterable, Identifiable, Hashable, Sendable {
     case traffic
     case runways
@@ -111,19 +290,28 @@ enum WeatherLayer: String, CaseIterable, Identifiable, Hashable, Sendable {
 }
 
 enum TowerViewpoint: String, CaseIterable, Identifiable, Hashable, Sendable {
-    case north
-    case runway22L
-    case runway22R
-    case apron
+    case tower
+    case runway
+    case arrivalCorridor
+    case departureCorridor
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
-        case .north: "North"
-        case .runway22L: "22L View"
-        case .runway22R: "22R View"
-        case .apron: "Apron"
+        case .tower: "Tower"
+        case .runway: "Runway"
+        case .arrivalCorridor: "Arrivals"
+        case .departureCorridor: "Departures"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .tower: "binoculars"
+        case .runway: "road.lanes"
+        case .arrivalCorridor: "arrow.down.forward"
+        case .departureCorridor: "arrow.up.forward"
         }
     }
 }
@@ -422,6 +610,50 @@ enum AirportCatalog {
             runways: [
                 Runway(id: "09L / 27R", usage: "Traffic flow", status: .active, condition: "VFR"),
                 Runway(id: "09R / 27L", usage: "Traffic flow", status: .standby, condition: "VFR")
+            ]
+        ),
+        Airport(
+            id: "WSSS",
+            iata: "SIN",
+            icao: "WSSS",
+            name: "Changi",
+            city: "Singapore",
+            country: "Singapore",
+            latitude: 1.3644,
+            longitude: 103.9915,
+            runways: [
+                Runway(id: "02L / 20R", usage: "Arrival flow", status: .active, condition: "VFR"),
+                Runway(id: "02C / 20C", usage: "Departure flow", status: .active, condition: "VFR"),
+                Runway(id: "02R / 20L", usage: "Standby context", status: .standby, condition: "VFR")
+            ]
+        ),
+        Airport(
+            id: "ZSPD",
+            iata: "PVG",
+            icao: "ZSPD",
+            name: "Shanghai Pudong",
+            city: "Shanghai",
+            country: "China",
+            latitude: 31.1443,
+            longitude: 121.8083,
+            runways: [
+                Runway(id: "16L / 34R", usage: "Arrival flow", status: .active, condition: "IFR"),
+                Runway(id: "16R / 34L", usage: "Departure flow", status: .active, condition: "IFR"),
+                Runway(id: "17L / 35R", usage: "Cargo flow", status: .active, condition: "IFR"),
+                Runway(id: "17R / 35L", usage: "Standby context", status: .standby, condition: "IFR")
+            ]
+        ),
+        Airport(
+            id: "ZSNB",
+            iata: "NGB",
+            icao: "ZSNB",
+            name: "Ningbo Lishe",
+            city: "Ningbo",
+            country: "China",
+            latitude: 29.8267,
+            longitude: 121.4619,
+            runways: [
+                Runway(id: "13 / 31", usage: "Mixed flow", status: .active, condition: "VFR")
             ]
         )
     ]

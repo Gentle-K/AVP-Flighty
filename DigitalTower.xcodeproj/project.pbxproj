@@ -17,11 +17,13 @@
 		42D457F44517404022EBDE58 /* DigitalTowerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A418BD99A4BF3E9C9CE8FB /* DigitalTowerModel.swift */; };
 		4E5AB5787ACB4AB429AC97A7 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0B1992982A5256D96CD9CD /* DesignSystem.swift */; };
 		4EC5759EE23CE7CD22E1E884 /* SettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267378FBEFA3F255CB4050D0 /* SettingsPanel.swift */; };
+		52C8029F2E6E41F8BBD006E1 /* A380ExteriorLite.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 52C8029E2E6E41F8BBD006E1 /* A380ExteriorLite.usdz */; };
 		58FB631AFA51B65D6C7DAC10 /* ReleaseReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46695445AEA92F20DAFC86A0 /* ReleaseReview.swift */; };
 		651D0A5F3F4B6992848AEE67 /* RightInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568C61F2FE8CF3C35F34FEA2 /* RightInspectorView.swift */; };
 		65FF094EA8A36851042D8CF9 /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22444C4DDDDAF8FF8BD36E79 /* DomainModels.swift */; };
 		7182B211E9B3F09C20BE1CE4 /* AgentSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE79EA6BA0AA13E71499A8B1 /* AgentSystem.swift */; };
 		795B283D1C77960205A002AD /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC3C3C8F1B153EEC100C830 /* SampleData.swift */; };
+		83BD4C331C2E44E1A891879A /* airbus_a380full_interior_hd.glb in Resources */ = {isa = PBXBuildFile; fileRef = 83BD4C321C2E44E1A891879A /* airbus_a380full_interior_hd.glb */; };
 		9D68275DD1005ED8EEDDE94C /* BottomControlDock.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4D1C2266DF3B5F93A0A859 /* BottomControlDock.swift */; };
 		AC5C0541C8FDA8628BDA15D7 /* DigitalTowerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EF97EE6DB955A5D59DE50A /* DigitalTowerModelTests.swift */; };
 		BC6F699430595A82191B8C76 /* SideRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CB178031527E4590C33063 /* SideRail.swift */; };
@@ -47,11 +49,13 @@
 		46695445AEA92F20DAFC86A0 /* ReleaseReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseReview.swift; sourceTree = "<group>"; };
 		4E0244AE2869B399B2FC4A61 /* DigitalTowerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DigitalTowerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FC3C3C8F1B153EEC100C830 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		52C8029E2E6E41F8BBD006E1 /* A380ExteriorLite.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = A380ExteriorLite.usdz; sourceTree = "<group>"; };
 		534C4423910CC010C215F3A4 /* AviationDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AviationDataProvider.swift; sourceTree = "<group>"; };
 		55EF97EE6DB955A5D59DE50A /* DigitalTowerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerModelTests.swift; sourceTree = "<group>"; };
 		568C61F2FE8CF3C35F34FEA2 /* RightInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightInspectorView.swift; sourceTree = "<group>"; };
 		5E0B1992982A5256D96CD9CD /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		6B56F0A2EE01C62B5A667E6C /* AirspaceSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirspaceSceneView.swift; sourceTree = "<group>"; };
+		83BD4C321C2E44E1A891879A /* airbus_a380full_interior_hd.glb */ = {isa = PBXFileReference; lastKnownFileType = file; path = airbus_a380full_interior_hd.glb; sourceTree = "<group>"; };
 		84A418BD99A4BF3E9C9CE8FB /* DigitalTowerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerModel.swift; sourceTree = "<group>"; };
 		A64B8A631A3817F27F36DAA1 /* DigitalTowerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerApp.swift; sourceTree = "<group>"; };
 		AE79EA6BA0AA13E71499A8B1 /* AgentSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSystem.swift; sourceTree = "<group>"; };
@@ -78,8 +82,18 @@
 			isa = PBXGroup;
 			children = (
 				0E38E40BDBDBFDCCFFFC8432 /* Assets.xcassets */,
+				6D6426D2117942C0B83F6D64 /* Models */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		6D6426D2117942C0B83F6D64 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				52C8029E2E6E41F8BBD006E1 /* A380ExteriorLite.usdz */,
+				83BD4C321C2E44E1A891879A /* airbus_a380full_interior_hd.glb */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		469DACC7037A2D69D9D32311 /* Views */ = {
@@ -225,7 +239,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				52C8029F2E6E41F8BBD006E1 /* A380ExteriorLite.usdz in Resources */,
 				42B68C7274DF91548664B2BA /* Assets.xcassets in Resources */,
+				83BD4C331C2E44E1A891879A /* airbus_a380full_interior_hd.glb in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -369,6 +385,8 @@
 				INFOPLIST_KEY_AVIATION_API_BASE_URL = "$(AVIATION_API_BASE_URL)";
 				INFOPLIST_KEY_AVIATION_API_TOKEN = "$(AVIATION_API_TOKEN)";
 				INFOPLIST_KEY_CFBundleDisplayName = "Digital Tower";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsMultipleScenes = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -471,6 +489,8 @@
 				INFOPLIST_KEY_AVIATION_API_BASE_URL = "$(AVIATION_API_BASE_URL)";
 				INFOPLIST_KEY_AVIATION_API_TOKEN = "$(AVIATION_API_TOKEN)";
 				INFOPLIST_KEY_CFBundleDisplayName = "Digital Tower";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsMultipleScenes = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

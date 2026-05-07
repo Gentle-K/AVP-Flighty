@@ -28,6 +28,31 @@ protocol FlightDataProvider: Sendable {
 
     func bootstrap(airportCode: String) async throws -> AviationSnapshot
     func events(airportCode: String) -> AsyncThrowingStream<AviationDataEvent, Error>
+    func fetchFlights(region: FlightRegion) async throws -> [FlightTrack]
+    func fetchAirportTraffic(airportCode: String) async throws -> AviationSnapshot
+    func fetchFlightDetail(flightId: String) async throws -> FlightTrack?
+    func fetchReplayData(_ query: ReplayQuery) async throws -> [ReplayEvent]
+}
+
+extension FlightDataProvider {
+    func fetchFlights(region: FlightRegion) async throws -> [FlightTrack] {
+        guard let airportCode = region.airportCode else {
+            throw AviationDataError.missingConfiguration
+        }
+        return try await bootstrap(airportCode: airportCode).flights
+    }
+
+    func fetchAirportTraffic(airportCode: String) async throws -> AviationSnapshot {
+        try await bootstrap(airportCode: airportCode)
+    }
+
+    func fetchFlightDetail(flightId: String) async throws -> FlightTrack? {
+        nil
+    }
+
+    func fetchReplayData(_ query: ReplayQuery) async throws -> [ReplayEvent] {
+        try await bootstrap(airportCode: query.airportCode).replayEvents
+    }
 }
 
 struct AviationDataConfiguration: Equatable, Sendable {
@@ -57,7 +82,7 @@ struct AviationDataConfiguration: Equatable, Sendable {
     }
 }
 
-struct LiveAviationDataProvider: FlightDataProvider {
+struct RealFlightDataProvider: FlightDataProvider {
     let configuration: AviationDataConfiguration
     let session: URLSession = .shared
 
@@ -123,7 +148,19 @@ struct LiveAviationDataProvider: FlightDataProvider {
             throw AviationDataError.invalidResponse(http.statusCode)
         }
     }
+
+    func fetchFlightDetail(flightId: String) async throws -> FlightTrack? {
+        let url = configuration.baseURL
+            .appending(path: "v1")
+            .appending(path: "flights")
+            .appending(path: flightId)
+        let (data, response) = try await session.data(for: request(url: url))
+        try validate(response)
+        return try JSONDecoder.aviation.decode(FlightPayload.self, from: data).flight
+    }
 }
+
+typealias LiveAviationDataProvider = RealFlightDataProvider
 
 struct UnavailableAviationDataProvider: FlightDataProvider {
     let message: String
@@ -143,7 +180,7 @@ struct UnavailableAviationDataProvider: FlightDataProvider {
 enum FlightDataProviderFactory {
     static func makeDefault() -> any FlightDataProvider {
         if let configuration = AviationDataConfiguration.fromBundle() {
-            return LiveAviationDataProvider(configuration: configuration)
+            return RealFlightDataProvider(configuration: configuration)
         }
 
         #if DEBUG

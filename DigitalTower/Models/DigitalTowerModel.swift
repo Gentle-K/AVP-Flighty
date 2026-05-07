@@ -20,6 +20,34 @@ final class DigitalTowerModel: ObservableObject {
     @Published private(set) var agentPlan: AppActionPlan
     @Published private(set) var releaseReview: ReleaseReviewResult
 
+    @Published var experienceMode: ExperienceMode = .skyPortal {
+        didSet {
+            if experienceMode == .flightChase, selectedFlight == nil {
+                selectedFlight = flights.first
+            }
+            mode = experienceMode.legacyMode
+            refreshDerivedState()
+        }
+    }
+    @Published var sceneScalePreset: SceneScalePreset = .fullSky {
+        didSet { refreshDerivedState() }
+    }
+    @Published var aircraftDensity: AircraftDensity = .medium {
+        didSet { refreshDerivedState() }
+    }
+    @Published var labelDensity: LabelDensity = .focused {
+        didSet { refreshDerivedState() }
+    }
+    @Published var trailLength: Double = 0.68 {
+        didSet { refreshDerivedState() }
+    }
+    @Published var verticalExaggeration: Double = 1.15 {
+        didSet { refreshDerivedState() }
+    }
+    @Published var isSoundEnabled = true
+    @Published var isCinematicFlybyEnabled = true
+    @Published var shouldShowOnboardingHints = true
+
     @Published var mode: AirspaceMode = .live {
         didSet {
             if mode == .flight, selectedFlight == nil {
@@ -42,7 +70,7 @@ final class DigitalTowerModel: ObservableObject {
             refreshDerivedState()
         }
     }
-    @Published var selectedTowerViewpoint: TowerViewpoint = .runway22L
+    @Published var selectedTowerViewpoint: TowerViewpoint = .tower
     @Published var selectedSettingsCategory: SettingsCategory = .dataSources
     @Published var searchText = ""
     @Published var isSearchFocused = false
@@ -214,13 +242,34 @@ final class DigitalTowerModel: ObservableObject {
 
     func setMode(_ newMode: AirspaceMode) {
         mode = newMode
+        experienceMode = ExperienceMode.fromLegacyMode(newMode)
+    }
+
+    func setExperienceMode(_ newMode: ExperienceMode) {
+        if newMode == .flightChase, selectedFlight == nil {
+            selectedFlight = flights.first
+        }
+        if newMode == .globe {
+            sceneScalePreset = .globe
+        } else if newMode == .skyPortal {
+            sceneScalePreset = .fullSky
+        } else if newMode == .digitalTower || newMode == .replay {
+            sceneScalePreset = .roomScaleAirport
+        }
+        experienceMode = newMode
     }
 
     func selectFlight(_ flight: FlightTrack) {
         selectedFlight = flight
         mode = .flight
+        experienceMode = .flightChase
         searchText = ""
         isSearchFocused = false
+    }
+
+    func selectFlight(id: String) {
+        guard let flight = flights.first(where: { $0.id == id }) else { return }
+        selectFlight(flight)
     }
 
     func selectSearchResult(_ result: SearchResult) {
@@ -273,7 +322,12 @@ final class DigitalTowerModel: ObservableObject {
     func resetLayout() {
         overlays = [.traffic, .labels]
         selectedWeatherLayers = [.metar, .wind]
-        selectedTowerViewpoint = .runway22L
+        selectedTowerViewpoint = .tower
+        aircraftDensity = .medium
+        labelDensity = .focused
+        trailLength = 0.68
+        verticalExaggeration = 1.15
+        sceneScalePreset = .fullSky
         isSettingsPresented = false
     }
 
@@ -289,6 +343,24 @@ final class DigitalTowerModel: ObservableObject {
             return
         }
         immersiveCommand = isImmersiveOpen ? .dismiss : .open
+    }
+
+    func requestOpenImmersive() {
+        guard hasAcceptedSafetyNotice else {
+            isSafetyNoticePresented = true
+            return
+        }
+        guard !isImmersiveOpen else { return }
+        immersiveCommand = .open
+    }
+
+    func requestDismissImmersive() {
+        guard isImmersiveOpen else { return }
+        immersiveCommand = .dismiss
+    }
+
+    func dismissOnboardingHints() {
+        shouldShowOnboardingHints = false
     }
 
     func completeImmersiveCommand() {
