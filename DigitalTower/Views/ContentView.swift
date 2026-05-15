@@ -376,10 +376,7 @@ private struct ComfortSettingsStrip: View {
                 Slider(value: $model.trailLength, in: 0.2...1)
             }
 
-            HStack {
-                Toggle("Sound", isOn: $model.isSoundEnabled)
-                Toggle("Flyby", isOn: $model.isCinematicFlybyEnabled)
-            }
+            Toggle("Sound", isOn: $model.isSoundEnabled)
             .toggleStyle(.button)
         }
         .font(.caption)

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		008CE82F84060D342D415B61 /* DigitalTowerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A64B8A631A3817F27F36DAA1 /* DigitalTowerApp.swift */; };
 		01721400AD6FA1C5ADEE2887 /* ImmersiveAirspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C9477B567A47A9504D03A9 /* ImmersiveAirspaceView.swift */; };
+		15D7DF81409CB7E4FC6EFC34 /* AircraftEntityPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1B27BBDF08D33EC9459AD23 /* AircraftEntityPool.swift */; };
 		1F451040F99DC76E3148DBB9 /* AviationDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 534C4423910CC010C215F3A4 /* AviationDataProvider.swift */; };
 		3DBBF33F8CFFE296E0330C4E /* AviationDataProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDE15CE3976F802B8D630ED3 /* AviationDataProviderTests.swift */; };
 		408235CCC17866C5961F2B84 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AFA00B1B36421474E1E21BE /* ContentView.swift */; };
@@ -17,17 +18,20 @@
 		42D457F44517404022EBDE58 /* DigitalTowerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A418BD99A4BF3E9C9CE8FB /* DigitalTowerModel.swift */; };
 		4E5AB5787ACB4AB429AC97A7 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0B1992982A5256D96CD9CD /* DesignSystem.swift */; };
 		4EC5759EE23CE7CD22E1E884 /* SettingsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 267378FBEFA3F255CB4050D0 /* SettingsPanel.swift */; };
-		52C8029F2E6E41F8BBD006E1 /* A380ExteriorLite.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 52C8029E2E6E41F8BBD006E1 /* A380ExteriorLite.usdz */; };
 		58FB631AFA51B65D6C7DAC10 /* ReleaseReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46695445AEA92F20DAFC86A0 /* ReleaseReview.swift */; };
 		651D0A5F3F4B6992848AEE67 /* RightInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568C61F2FE8CF3C35F34FEA2 /* RightInspectorView.swift */; };
 		65FF094EA8A36851042D8CF9 /* DomainModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22444C4DDDDAF8FF8BD36E79 /* DomainModels.swift */; };
 		7182B211E9B3F09C20BE1CE4 /* AgentSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE79EA6BA0AA13E71499A8B1 /* AgentSystem.swift */; };
 		795B283D1C77960205A002AD /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FC3C3C8F1B153EEC100C830 /* SampleData.swift */; };
-		83BD4C331C2E44E1A891879A /* airbus_a380full_interior_hd.glb in Resources */ = {isa = PBXBuildFile; fileRef = 83BD4C321C2E44E1A891879A /* airbus_a380full_interior_hd.glb */; };
+		79FCA4453AD9DD64CEC4585E /* AircraftAssetResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82DC5CDBC0705E0343833041 /* AircraftAssetResolver.swift */; };
+		842F8156EFAABFF79E3138F8 /* AircraftModelFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2F9FDE7DA670BD2A811FF8A /* AircraftModelFactory.swift */; };
+		94D34FAFD34641413F868C27 /* TrailMeshFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C537B9E8CEAF72119D73A9BB /* TrailMeshFactoryTests.swift */; };
 		9D68275DD1005ED8EEDDE94C /* BottomControlDock.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4D1C2266DF3B5F93A0A859 /* BottomControlDock.swift */; };
 		AC5C0541C8FDA8628BDA15D7 /* DigitalTowerModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55EF97EE6DB955A5D59DE50A /* DigitalTowerModelTests.swift */; };
 		BC6F699430595A82191B8C76 /* SideRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2CB178031527E4590C33063 /* SideRail.swift */; };
+		C3669F3097528F70BC56C7CF /* RouteVisualStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12B4853B22A670BA91E406A /* RouteVisualStyle.swift */; };
 		DD58F12BEE8B13C1BE09FDCF /* TopCommandBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03576FBD0F753D3EF353F1E0 /* TopCommandBar.swift */; };
+		F51EC12033C48B6FF378BFB6 /* A380.glb in Resources */ = {isa = PBXBuildFile; fileRef = 4524655222E25EE0D0F02FB0 /* A380.glb */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,20 +50,24 @@
 		22444C4DDDDAF8FF8BD36E79 /* DomainModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainModels.swift; sourceTree = "<group>"; };
 		267378FBEFA3F255CB4050D0 /* SettingsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPanel.swift; sourceTree = "<group>"; };
 		3AFA00B1B36421474E1E21BE /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		4524655222E25EE0D0F02FB0 /* A380.glb */ = {isa = PBXFileReference; path = A380.glb; sourceTree = "<group>"; };
 		46695445AEA92F20DAFC86A0 /* ReleaseReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseReview.swift; sourceTree = "<group>"; };
 		4E0244AE2869B399B2FC4A61 /* DigitalTowerTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = DigitalTowerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FC3C3C8F1B153EEC100C830 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
-		52C8029E2E6E41F8BBD006E1 /* A380ExteriorLite.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = A380ExteriorLite.usdz; sourceTree = "<group>"; };
 		534C4423910CC010C215F3A4 /* AviationDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AviationDataProvider.swift; sourceTree = "<group>"; };
 		55EF97EE6DB955A5D59DE50A /* DigitalTowerModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerModelTests.swift; sourceTree = "<group>"; };
 		568C61F2FE8CF3C35F34FEA2 /* RightInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RightInspectorView.swift; sourceTree = "<group>"; };
 		5E0B1992982A5256D96CD9CD /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		6B56F0A2EE01C62B5A667E6C /* AirspaceSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirspaceSceneView.swift; sourceTree = "<group>"; };
-		83BD4C321C2E44E1A891879A /* airbus_a380full_interior_hd.glb */ = {isa = PBXFileReference; lastKnownFileType = file; path = airbus_a380full_interior_hd.glb; sourceTree = "<group>"; };
+		82DC5CDBC0705E0343833041 /* AircraftAssetResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AircraftAssetResolver.swift; sourceTree = "<group>"; };
 		84A418BD99A4BF3E9C9CE8FB /* DigitalTowerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerModel.swift; sourceTree = "<group>"; };
 		A64B8A631A3817F27F36DAA1 /* DigitalTowerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigitalTowerApp.swift; sourceTree = "<group>"; };
 		AE79EA6BA0AA13E71499A8B1 /* AgentSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentSystem.swift; sourceTree = "<group>"; };
+		B12B4853B22A670BA91E406A /* RouteVisualStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteVisualStyle.swift; sourceTree = "<group>"; };
+		B2F9FDE7DA670BD2A811FF8A /* AircraftModelFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AircraftModelFactory.swift; sourceTree = "<group>"; };
 		BB3BC80580E1CFD3DF1C8864 /* DigitalTower.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = DigitalTower.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1B27BBDF08D33EC9459AD23 /* AircraftEntityPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AircraftEntityPool.swift; sourceTree = "<group>"; };
+		C537B9E8CEAF72119D73A9BB /* TrailMeshFactoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailMeshFactoryTests.swift; sourceTree = "<group>"; };
 		C7C9477B567A47A9504D03A9 /* ImmersiveAirspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImmersiveAirspaceView.swift; sourceTree = "<group>"; };
 		CDE15CE3976F802B8D630ED3 /* AviationDataProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AviationDataProviderTests.swift; sourceTree = "<group>"; };
 		DD4D1C2266DF3B5F93A0A859 /* BottomControlDock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomControlDock.swift; sourceTree = "<group>"; };
@@ -82,34 +90,37 @@
 			isa = PBXGroup;
 			children = (
 				0E38E40BDBDBFDCCFFFC8432 /* Assets.xcassets */,
-				6D6426D2117942C0B83F6D64 /* Models */,
+				6D0397F676099386D45776A7 /* Models */,
 			);
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		6D6426D2117942C0B83F6D64 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				52C8029E2E6E41F8BBD006E1 /* A380ExteriorLite.usdz */,
-				83BD4C321C2E44E1A891879A /* airbus_a380full_interior_hd.glb */,
-			);
-			path = Models;
 			sourceTree = "<group>";
 		};
 		469DACC7037A2D69D9D32311 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				82DC5CDBC0705E0343833041 /* AircraftAssetResolver.swift */,
+				C1B27BBDF08D33EC9459AD23 /* AircraftEntityPool.swift */,
+				B2F9FDE7DA670BD2A811FF8A /* AircraftModelFactory.swift */,
 				6B56F0A2EE01C62B5A667E6C /* AirspaceSceneView.swift */,
 				DD4D1C2266DF3B5F93A0A859 /* BottomControlDock.swift */,
 				3AFA00B1B36421474E1E21BE /* ContentView.swift */,
 				5E0B1992982A5256D96CD9CD /* DesignSystem.swift */,
 				C7C9477B567A47A9504D03A9 /* ImmersiveAirspaceView.swift */,
 				568C61F2FE8CF3C35F34FEA2 /* RightInspectorView.swift */,
+				B12B4853B22A670BA91E406A /* RouteVisualStyle.swift */,
 				267378FBEFA3F255CB4050D0 /* SettingsPanel.swift */,
 				E2CB178031527E4590C33063 /* SideRail.swift */,
 				03576FBD0F753D3EF353F1E0 /* TopCommandBar.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		6D0397F676099386D45776A7 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				4524655222E25EE0D0F02FB0 /* A380.glb */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		9B781D55905F9025EB49747A = {
@@ -147,6 +158,7 @@
 			children = (
 				CDE15CE3976F802B8D630ED3 /* AviationDataProviderTests.swift */,
 				55EF97EE6DB955A5D59DE50A /* DigitalTowerModelTests.swift */,
+				C537B9E8CEAF72119D73A9BB /* TrailMeshFactoryTests.swift */,
 			);
 			path = DigitalTowerTests;
 			sourceTree = "<group>";
@@ -239,9 +251,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				52C8029F2E6E41F8BBD006E1 /* A380ExteriorLite.usdz in Resources */,
+				F51EC12033C48B6FF378BFB6 /* A380.glb in Resources */,
 				42B68C7274DF91548664B2BA /* Assets.xcassets in Resources */,
-				83BD4C331C2E44E1A891879A /* airbus_a380full_interior_hd.glb in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -254,6 +265,7 @@
 			files = (
 				3DBBF33F8CFFE296E0330C4E /* AviationDataProviderTests.swift in Sources */,
 				AC5C0541C8FDA8628BDA15D7 /* DigitalTowerModelTests.swift in Sources */,
+				94D34FAFD34641413F868C27 /* TrailMeshFactoryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -262,6 +274,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				7182B211E9B3F09C20BE1CE4 /* AgentSystem.swift in Sources */,
+				79FCA4453AD9DD64CEC4585E /* AircraftAssetResolver.swift in Sources */,
+				15D7DF81409CB7E4FC6EFC34 /* AircraftEntityPool.swift in Sources */,
+				842F8156EFAABFF79E3138F8 /* AircraftModelFactory.swift in Sources */,
 				42633AA4F3189635527ADA8F /* AirspaceSceneView.swift in Sources */,
 				1F451040F99DC76E3148DBB9 /* AviationDataProvider.swift in Sources */,
 				9D68275DD1005ED8EEDDE94C /* BottomControlDock.swift in Sources */,
@@ -273,6 +288,7 @@
 				01721400AD6FA1C5ADEE2887 /* ImmersiveAirspaceView.swift in Sources */,
 				58FB631AFA51B65D6C7DAC10 /* ReleaseReview.swift in Sources */,
 				651D0A5F3F4B6992848AEE67 /* RightInspectorView.swift in Sources */,
+				C3669F3097528F70BC56C7CF /* RouteVisualStyle.swift in Sources */,
 				795B283D1C77960205A002AD /* SampleData.swift in Sources */,
 				4EC5759EE23CE7CD22E1E884 /* SettingsPanel.swift in Sources */,
 				BC6F699430595A82191B8C76 /* SideRail.swift in Sources */,

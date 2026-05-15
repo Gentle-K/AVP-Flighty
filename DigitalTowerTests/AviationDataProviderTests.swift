@@ -34,6 +34,43 @@ final class AviationDataProviderTests: XCTestCase {
         }
         XCTAssertEqual(flight.callsign, "DTX1")
         XCTAssertEqual(flight.destination, "JFK")
+        XCTAssertNil(flight.route)
+    }
+
+    func testPhaseMetadataIsCodableSafe() throws {
+        let phase = FlightTrack.Phase.goAround
+
+        XCTAssertEqual(phase.displayName, "Go-Around")
+        XCTAssertEqual(phase.family, .recovery)
+        XCTAssertEqual(phase.displayColor.hex, "#FF6A3D")
+        XCTAssertEqual(phase.trailStyle.pattern, .solid)
+        XCTAssertEqual(phase.priority, 100)
+        XCTAssertEqual(phase.soundCue.intensity, .critical)
+
+        let encoded = try JSONEncoder().encode(phase.trailStyle)
+        let decoded = try JSONDecoder().decode(FlightTrailStyle.self, from: encoded)
+        XCTAssertEqual(decoded, phase.trailStyle)
+    }
+
+    func testDebugSampleFlightsCoverOperationalPhasesAndRoutes() throws {
+        let flights = SampleData.flights(for: AirportCatalog.fallbackAirport)
+        let phases = Set(flights.map(\.phase))
+
+        XCTAssertTrue(phases.isSuperset(of: [
+            .finalApproach,
+            .landingFlare,
+            .touchdown,
+            .rollout,
+            .takeoffRoll,
+            .rotation,
+            .initialClimb,
+            .holding,
+            .goAround
+        ]))
+        XCTAssertTrue(flights.contains { $0.aircraft == "A359" })
+        XCTAssertTrue(flights.contains { $0.category == .cargo })
+        XCTAssertTrue(flights.contains { $0.category == .privateJet })
+        XCTAssertTrue(flights.allSatisfy { $0.route?.waypoints.isEmpty == false })
     }
 
     func testServerSentEventParserEmitsOnBlankLine() throws {

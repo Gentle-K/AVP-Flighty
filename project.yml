@@ -14,9 +14,9 @@ targets:
     deploymentTarget: "2.0"
     sources:
       - path: DigitalTower
-      - path: DigitalTower/Resources/Models/A380ExteriorLite.usdz
-        buildPhase: resources
-      - path: DigitalTower/Resources/Models/airbus_a380full_interior_hd.glb
+        excludes:
+          - Resources/Models/A380Complete.usdz
+      - path: DigitalTower/Resources/Models/A380.glb
         buildPhase: resources
     settings:
       base:

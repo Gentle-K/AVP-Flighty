@@ -180,9 +180,9 @@ enum AircraftDensity: String, CaseIterable, Identifiable, Hashable, Sendable {
 
     var visibleLimit: Int {
         switch self {
-        case .low: 14
-        case .medium: 28
-        case .high: 48
+        case .low: 8
+        case .medium: 8
+        case .high: 8
         }
     }
 }
@@ -388,12 +388,157 @@ struct FlightTrack: Identifiable, Hashable, Codable, Sendable {
     enum Phase: String, Codable, Sendable {
         case pushback = "Pushback"
         case taxi = "Taxi"
+        case takeoffRoll = "Takeoff Roll"
+        case rotation = "Rotation"
         case takeoff = "Takeoff"
+        case initialClimb = "Initial Climb"
         case climb = "Climb"
         case cruise = "Cruise"
+        case holding = "Holding"
         case descent = "Descent"
+        case downwind = "Downwind"
+        case baseTurn = "Base Turn"
+        case finalApproach = "Final Approach"
         case final = "Final"
+        case landingFlare = "Landing Flare"
+        case touchdown = "Touchdown"
+        case rollout = "Rollout"
+        case taxiIn = "Taxi In"
+        case taxiOut = "Taxi Out"
+        case lineUp = "Line Up"
         case landed = "Landed"
+        case departureTurn = "Departure Turn"
+        case departureClimb = "Departure Climb"
+        case goAround = "Go-Around"
+
+        enum Family: String, Codable, Sendable {
+            case surface
+            case departure
+            case enroute
+            case arrival
+            case recovery
+        }
+
+        var displayName: String {
+            switch self {
+            case .final, .finalApproach:
+                return "Final Approach"
+            case .goAround:
+                return "Go-Around"
+            default:
+                return rawValue
+            }
+        }
+
+        var shortLabel: String {
+            switch self {
+            case .pushback: "PUSH"
+            case .taxi: "TAXI"
+            case .takeoffRoll: "ROLL"
+            case .rotation: "ROT"
+            case .takeoff: "TO"
+            case .initialClimb: "ICL"
+            case .climb: "CLB"
+            case .cruise: "CRZ"
+            case .holding: "HOLD"
+            case .descent: "DES"
+            case .downwind: "DW"
+            case .baseTurn: "BASE"
+            case .finalApproach: "FINAL"
+            case .final: "FINAL"
+            case .landingFlare: "FLARE"
+            case .touchdown: "TD"
+            case .rollout: "RLO"
+            case .taxiIn: "TXI"
+            case .taxiOut: "TXO"
+            case .lineUp: "LINE"
+            case .landed: "LND"
+            case .departureTurn: "DTURN"
+            case .departureClimb: "DCLB"
+            case .goAround: "GA"
+            }
+        }
+
+        var family: Family {
+            switch self {
+            case .pushback, .taxi, .taxiIn, .taxiOut, .lineUp, .landed:
+                return .surface
+            case .takeoffRoll, .rotation, .takeoff, .initialClimb, .departureTurn, .departureClimb, .climb:
+                return .departure
+            case .cruise:
+                return .enroute
+            case .holding, .descent, .downwind, .baseTurn, .finalApproach, .final, .landingFlare, .touchdown, .rollout:
+                return .arrival
+            case .goAround:
+                return .recovery
+            }
+        }
+
+        var displayColor: AviationColorToken {
+            switch family {
+            case .surface:
+                return AviationColorToken(name: "Surface", hex: "#A7B0BA")
+            case .departure:
+                return AviationColorToken(name: "Departure", hex: "#FFB44C")
+            case .enroute:
+                return AviationColorToken(name: "Enroute", hex: "#68B7FF")
+            case .arrival:
+                return AviationColorToken(name: "Arrival", hex: "#50D8FF")
+            case .recovery:
+                return AviationColorToken(name: "Recovery", hex: "#FF6A3D")
+            }
+        }
+
+        var trailStyle: FlightTrailStyle {
+            switch self {
+            case .pushback, .taxi, .taxiIn, .taxiOut, .lineUp, .landed:
+                return FlightTrailStyle(color: displayColor, opacity: 0.18, width: 0.6, pattern: .shortDash)
+            case .takeoffRoll, .rotation, .touchdown, .rollout:
+                return FlightTrailStyle(color: displayColor, opacity: 0.36, width: 0.95, pattern: .solid)
+            case .downwind, .baseTurn, .finalApproach, .final, .landingFlare, .goAround:
+                return FlightTrailStyle(color: displayColor, opacity: 0.42, width: 1.15, pattern: .solid)
+            case .holding:
+                return FlightTrailStyle(color: displayColor, opacity: 0.3, width: 0.85, pattern: .loop)
+            case .departureTurn, .departureClimb:
+                return FlightTrailStyle(color: displayColor, opacity: 0.34, width: 0.9, pattern: .solid)
+            default:
+                return FlightTrailStyle(color: displayColor, opacity: 0.26, width: 0.75, pattern: .solid)
+            }
+        }
+
+        var priority: Int {
+            switch self {
+            case .goAround:
+                return 100
+            case .landingFlare, .touchdown:
+                return 90
+            case .finalApproach, .final, .takeoffRoll, .rotation, .departureTurn:
+                return 80
+            case .downwind, .baseTurn, .initialClimb, .departureClimb, .rollout, .holding:
+                return 65
+            case .takeoff, .climb, .descent:
+                return 50
+            case .pushback, .taxi, .taxiIn, .taxiOut, .lineUp, .cruise, .landed:
+                return 30
+            }
+        }
+
+        var soundCue: FlightSoundCue {
+            switch self {
+            case .goAround:
+                return FlightSoundCue(id: "phase.go-around", intensity: .critical)
+            case .landingFlare, .touchdown:
+                return FlightSoundCue(id: "phase.landing-close", intensity: .prominent)
+            case .takeoffRoll, .rotation:
+                return FlightSoundCue(id: "phase.departure-roll", intensity: .prominent)
+            case .finalApproach, .final, .holding:
+                return FlightSoundCue(id: "phase.arrival-monitor", intensity: .ambient)
+            case .departureTurn, .departureClimb, .initialClimb:
+                return FlightSoundCue(id: "phase.departure-climb", intensity: .ambient)
+            default:
+                return FlightSoundCue(id: "phase.standard", intensity: .subtle)
+            }
+        }
     }
 
     let id: String
@@ -413,6 +558,103 @@ struct FlightTrack: Identifiable, Hashable, Codable, Sendable {
     let phase: Phase
     let progress: Double
     let updatedAt: Date?
+    let route: FlightRoute?
+
+    init(
+        id: String,
+        callsign: String,
+        airline: String,
+        aircraft: String,
+        registration: String,
+        category: Category,
+        origin: String,
+        destination: String,
+        latitude: Double,
+        longitude: Double,
+        altitudeFeet: Int,
+        speedKnots: Int,
+        headingDegrees: Int,
+        verticalRateFeet: Int,
+        phase: Phase,
+        progress: Double,
+        updatedAt: Date?,
+        route: FlightRoute? = nil
+    ) {
+        self.id = id
+        self.callsign = callsign
+        self.airline = airline
+        self.aircraft = aircraft
+        self.registration = registration
+        self.category = category
+        self.origin = origin
+        self.destination = destination
+        self.latitude = latitude
+        self.longitude = longitude
+        self.altitudeFeet = altitudeFeet
+        self.speedKnots = speedKnots
+        self.headingDegrees = headingDegrees
+        self.verticalRateFeet = verticalRateFeet
+        self.phase = phase
+        self.progress = progress
+        self.updatedAt = updatedAt
+        self.route = route
+    }
+}
+
+struct AviationColorToken: Hashable, Codable, Sendable {
+    let name: String
+    let hex: String
+}
+
+struct FlightTrailStyle: Hashable, Codable, Sendable {
+    enum Pattern: String, Codable, Sendable {
+        case solid
+        case shortDash
+        case loop
+    }
+
+    let color: AviationColorToken
+    let opacity: Double
+    let width: Double
+    let pattern: Pattern
+}
+
+struct FlightSoundCue: Hashable, Codable, Sendable {
+    enum Intensity: String, Codable, Sendable {
+        case subtle
+        case ambient
+        case prominent
+        case critical
+    }
+
+    let id: String
+    let intensity: Intensity
+}
+
+struct FlightRoute: Hashable, Codable, Sendable {
+    let name: String
+    let activeWaypointID: String?
+    let waypoints: [FlightWaypoint]
+}
+
+struct FlightWaypoint: Identifiable, Hashable, Codable, Sendable {
+    enum Kind: String, Codable, Sendable {
+        case gate
+        case runway
+        case taxiway
+        case fix
+        case hold
+        case vector
+    }
+
+    let id: String
+    let name: String
+    let kind: Kind
+    let latitude: Double
+    let longitude: Double
+    let altitudeFeet: Int?
+    let speedKnots: Int?
+    let phaseHint: FlightTrack.Phase?
 }
 
 struct WeatherSnapshot: Hashable, Codable, Sendable {

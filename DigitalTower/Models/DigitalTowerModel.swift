@@ -20,7 +20,7 @@ final class DigitalTowerModel: ObservableObject {
     @Published private(set) var agentPlan: AppActionPlan
     @Published private(set) var releaseReview: ReleaseReviewResult
 
-    @Published var experienceMode: ExperienceMode = .skyPortal {
+    @Published var experienceMode: ExperienceMode = .digitalTower {
         didSet {
             if experienceMode == .flightChase, selectedFlight == nil {
                 selectedFlight = flights.first
@@ -35,7 +35,7 @@ final class DigitalTowerModel: ObservableObject {
     @Published var aircraftDensity: AircraftDensity = .medium {
         didSet { refreshDerivedState() }
     }
-    @Published var labelDensity: LabelDensity = .focused {
+    @Published var labelDensity: LabelDensity = .minimal {
         didSet { refreshDerivedState() }
     }
     @Published var trailLength: Double = 0.68 {
@@ -45,10 +45,10 @@ final class DigitalTowerModel: ObservableObject {
         didSet { refreshDerivedState() }
     }
     @Published var isSoundEnabled = true
-    @Published var isCinematicFlybyEnabled = true
-    @Published var shouldShowOnboardingHints = true
+    @Published var isAircraftOrientationTestSceneEnabled = false
+    @Published var shouldShowOnboardingHints = false
 
-    @Published var mode: AirspaceMode = .live {
+    @Published var mode: AirspaceMode = .tower {
         didSet {
             if mode == .flight, selectedFlight == nil {
                 selectedFlight = flights.first
@@ -108,6 +108,10 @@ final class DigitalTowerModel: ObservableObject {
         )
         self.agentPlan = orchestrator.plan(for: initialContext)
         self.releaseReview = releaseReviewer.review(context: initialContext)
+
+        #if DEBUG
+        applyDebugLaunchArguments(ProcessInfo.processInfo.arguments)
+        #endif
     }
 
     deinit {
@@ -324,7 +328,7 @@ final class DigitalTowerModel: ObservableObject {
         selectedWeatherLayers = [.metar, .wind]
         selectedTowerViewpoint = .tower
         aircraftDensity = .medium
-        labelDensity = .focused
+        labelDensity = .minimal
         trailLength = 0.68
         verticalExaggeration = 1.15
         sceneScalePreset = .fullSky
@@ -435,6 +439,9 @@ final class DigitalTowerModel: ObservableObject {
         if let selectedFlight, !flights.contains(where: { $0.id == selectedFlight.id }) {
             self.selectedFlight = flights.first
         }
+        if experienceMode == .flightChase, selectedFlight == nil {
+            selectedFlight = flights.first
+        }
     }
 
     private func clearSnapshotValues() {
@@ -444,6 +451,49 @@ final class DigitalTowerModel: ObservableObject {
         alerts = []
         replayEvents = []
     }
+
+    #if DEBUG
+    private func applyDebugLaunchArguments(_ arguments: [String]) {
+        if let rawMode = debugArgumentValue(named: "DTExperienceMode", in: arguments),
+           let mode = ExperienceMode(rawValue: rawMode) {
+            setExperienceMode(mode)
+        }
+
+        if let rawDensity = debugArgumentValue(named: "DTAircraftDensity", in: arguments),
+           let density = AircraftDensity(rawValue: rawDensity) {
+            aircraftDensity = density
+        }
+
+        if let rawTrailLength = debugArgumentValue(named: "DTTrailLength", in: arguments),
+           let value = Double(rawTrailLength) {
+            trailLength = min(1, max(0, value))
+        }
+
+        if let rawOrientationTest = debugArgumentValue(named: "DTAircraftOrientationTestScene", in: arguments) {
+            isAircraftOrientationTestSceneEnabled = ["1", "true", "yes", "on"].contains(rawOrientationTest.lowercased())
+        }
+
+        if let rawAcceptSafetyNotice = debugArgumentValue(named: "DTAcceptSafetyNotice", in: arguments),
+           ["1", "true", "yes", "on"].contains(rawAcceptSafetyNotice.lowercased()) {
+            hasAcceptedSafetyNotice = true
+            isSafetyNoticePresented = false
+        }
+    }
+
+    private func debugArgumentValue(named name: String, in arguments: [String]) -> String? {
+        let flag = "-\(name)"
+        for index in arguments.indices {
+            let argument = arguments[index]
+            if argument == flag, arguments.indices.contains(arguments.index(after: index)) {
+                return arguments[arguments.index(after: index)]
+            }
+            if argument.hasPrefix("\(flag)=") {
+                return String(argument.dropFirst(flag.count + 1))
+            }
+        }
+        return nil
+    }
+    #endif
 
     private func apply(_ event: AviationDataEvent) {
         switch event {

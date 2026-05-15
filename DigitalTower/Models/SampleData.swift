@@ -70,55 +70,191 @@ enum SampleData {
     }
 
     static func flights(for airport: Airport, tick: Int = 0) -> [FlightTrack] {
-        let templates: [(String, String, String, String, String, FlightTrack.Category, Double, Double, Int, Int, Int, FlightTrack.Phase)] = [
-            ("DTX2468", "Digital Tower Air", "A321", "ATL", airport.iata, .commercial, -9.4, 15.0, 4_200, 276, 58, .final),
-            ("DTA123", "Digital Tower Air", "B738", airport.iata, "MIA", .commercial, 8.8, -8.0, 2_800, 238, 192, .climb),
-            ("DTO050", "Digital Tower Longhaul", "B77W", "SFO", airport.iata, .commercial, -13.0, -5.5, 3_500, 265, 88, .final),
-            ("DTB789", "Digital Tower Shuttle", "A320", "BOS", airport.iata, .commercial, -2.2, 2.8, 2_100, 181, 226, .taxi),
-            ("DTF234", "Digital Tower Frontier", "B763", "DEN", airport.iata, .commercial, 12.0, 13.0, 6_000, 302, 112, .descent),
-            ("DTX908", "Digital Tower Cargo", "B752F", "SDF", airport.iata, .cargo, 16.0, -16.0, 12_400, 386, 71, .descent),
-            ("SKY411", "Skybridge", "A359", airport.iata, "LHR", .commercial, -20.0, 5.0, 18_500, 430, 34, .climb),
-            ("PAC705", "Pacific Air", "B789", "SIN", airport.iata, .commercial, 23.0, 18.0, 22_000, 445, 242, .descent),
-            ("CIN612", "Cinna Cargo", "B77F", airport.iata, "PVG", .cargo, -17.0, -20.0, 14_200, 390, 146, .climb),
-            ("NGB208", "Ningbo Connect", "E190", "NGB", airport.iata, .commercial, 6.0, 20.0, 7_500, 310, 278, .descent),
-            ("GLB331", "Global Link", "A21N", airport.iata, "JFK", .commercial, 19.0, -4.0, 10_800, 352, 308, .climb),
-            ("TWR777", "Tower Executive", "G650", "TEB", airport.iata, .privateJet, -4.0, -18.0, 16_000, 410, 96, .cruise)
+        struct Template {
+            let callsign: String
+            let airline: String
+            let aircraft: String
+            let origin: String
+            let destination: String
+            let category: FlightTrack.Category
+            let eastNM: Double
+            let northNM: Double
+            let altitudeFeet: Int
+            let speedKnots: Int
+            let headingDegrees: Int
+            let phase: FlightTrack.Phase
+        }
+
+        let templates: [Template] = [
+            Template(callsign: "DTX2468", airline: "Digital Tower Air", aircraft: "A321neo", origin: "ATL", destination: airport.iata, category: .commercial, eastNM: -9.4, northNM: 15.0, altitudeFeet: 4_200, speedKnots: 176, headingDegrees: 58, phase: .finalApproach),
+            Template(callsign: "DTL884", airline: "Digital Tower Shuttle", aircraft: "B738", origin: "BOS", destination: airport.iata, category: .commercial, eastNM: -2.8, northNM: 3.8, altitudeFeet: 620, speedKnots: 142, headingDegrees: 44, phase: .landingFlare),
+            Template(callsign: "DTO050", airline: "Digital Tower Longhaul", aircraft: "B77W", origin: "SFO", destination: airport.iata, category: .commercial, eastNM: -0.9, northNM: 0.8, altitudeFeet: 80, speedKnots: 126, headingDegrees: 43, phase: .touchdown),
+            Template(callsign: "DTB789", airline: "Digital Tower Shuttle", aircraft: "A320", origin: "MIA", destination: airport.iata, category: .commercial, eastNM: 0.3, northNM: 0.2, altitudeFeet: 20, speedKnots: 86, headingDegrees: 44, phase: .rollout),
+            Template(callsign: "DTA123", airline: "Digital Tower Air", aircraft: "B739", origin: airport.iata, destination: "MIA", category: .commercial, eastNM: 1.0, northNM: -0.6, altitudeFeet: 10, speedKnots: 92, headingDegrees: 224, phase: .takeoffRoll),
+            Template(callsign: "SKY411", airline: "Skybridge", aircraft: "A359", origin: airport.iata, destination: "LHR", category: .commercial, eastNM: 1.9, northNM: -1.2, altitudeFeet: 220, speedKnots: 156, headingDegrees: 226, phase: .rotation),
+            Template(callsign: "PAC705", airline: "Pacific Air", aircraft: "B789", origin: airport.iata, destination: "SIN", category: .commercial, eastNM: 4.7, northNM: -3.4, altitudeFeet: 1_900, speedKnots: 218, headingDegrees: 238, phase: .initialClimb),
+            Template(callsign: "HLD332", airline: "Harbor Link", aircraft: "E195-E2", origin: "YYZ", destination: airport.iata, category: .commercial, eastNM: -18.0, northNM: 11.0, altitudeFeet: 8_000, speedKnots: 214, headingDegrees: 92, phase: .holding),
+            Template(callsign: "GAA901", airline: "Global Atlantic", aircraft: "B763", origin: "DEN", destination: airport.iata, category: .commercial, eastNM: -6.0, northNM: 6.8, altitudeFeet: 1_600, speedKnots: 188, headingDegrees: 28, phase: .goAround),
+            Template(callsign: "DTX908", airline: "Digital Tower Cargo", aircraft: "B752F", origin: "SDF", destination: airport.iata, category: .cargo, eastNM: 16.0, northNM: -16.0, altitudeFeet: 12_400, speedKnots: 386, headingDegrees: 71, phase: .descent),
+            Template(callsign: "CIN612", airline: "Cinna Cargo", aircraft: "B77F", origin: airport.iata, destination: "PVG", category: .cargo, eastNM: -17.0, northNM: -20.0, altitudeFeet: 14_200, speedKnots: 390, headingDegrees: 146, phase: .climb),
+            Template(callsign: "TWR777", airline: "Tower Executive", aircraft: "G650", origin: "TEB", destination: airport.iata, category: .privateJet, eastNM: -4.0, northNM: -18.0, altitudeFeet: 16_000, speedKnots: 410, headingDegrees: 96, phase: .cruise)
         ]
 
         let expanded = (0..<36).map { index -> FlightTrack in
             let template = templates[index % templates.count]
             let lap = index / templates.count
             let motion = Double(tick) * 0.42 * Double((index % 3) + 1)
-            let heading = (template.10 + tick * (index.isMultiple(of: 2) ? 1 : -1) + lap * 11).wrappedDegrees
-            let east = template.6 + cos((Double(heading) + motion) * .pi / 180) * Double(lap) * 4.8
-            let north = template.7 + sin((Double(heading) + motion) * .pi / 180) * Double(lap) * 4.2
+            let heading = (template.headingDegrees + tick * (index.isMultiple(of: 2) ? 1 : -1) + lap * 11).wrappedDegrees
+            let east = template.eastNM + cos((Double(heading) + motion) * .pi / 180) * Double(lap) * 4.8
+            let north = template.northNM + sin((Double(heading) + motion) * .pi / 180) * Double(lap) * 4.2
             let coordinate = coordinate(from: airport, eastNM: east + motion * 0.08, northNM: north + motion * 0.06)
-            let altitude = max(400, template.8 + lap * 2_200 + ((tick + index) % 5) * 120)
-            let verticalRate = template.11 == .descent || template.11 == .final ? -700 - lap * 90 : 650 + lap * 80
-            let callsign = lap == 0 ? template.0 : "\(template.0)\(lap)"
+            let altitude = altitude(for: template.phase, base: template.altitudeFeet, lap: lap, tick: tick, index: index)
+            let verticalRate = verticalRate(for: template.phase, lap: lap)
+            let callsign = lap == 0 ? template.callsign : "\(template.callsign)\(lap)"
 
             return FlightTrack(
                 id: callsign,
                 callsign: callsign,
-                airline: template.1,
-                aircraft: template.2,
+                airline: template.airline,
+                aircraft: template.aircraft,
                 registration: "N\(abs(callsign.hashValue % 900) + 100)DT",
-                category: template.5,
-                origin: template.3,
-                destination: template.4,
+                category: template.category,
+                origin: template.origin,
+                destination: template.destination,
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude,
                 altitudeFeet: altitude,
-                speedKnots: template.9 + lap * 18,
+                speedKnots: max(0, template.speedKnots + lap * 18),
                 headingDegrees: heading,
                 verticalRateFeet: verticalRate,
-                phase: template.11,
+                phase: template.phase,
                 progress: min(0.97, 0.16 + Double(index % 12) * 0.065 + Double(tick % 20) * 0.004),
-                updatedAt: Date()
+                updatedAt: Date(),
+                route: route(
+                    for: template.phase,
+                    callsign: callsign,
+                    airport: airport,
+                    origin: template.origin,
+                    destination: template.destination,
+                    aircraftCoordinate: coordinate
+                )
             )
         }
 
         return expanded
+    }
+
+    private static func altitude(for phase: FlightTrack.Phase, base: Int, lap: Int, tick: Int, index: Int) -> Int {
+        let pulse = ((tick + index) % 5) * 80
+        switch phase {
+        case .takeoffRoll, .touchdown, .rollout:
+            return max(0, base + min(lap, 1) * 60)
+        case .rotation:
+            return base + lap * 140 + pulse
+        case .landingFlare:
+            return max(120, base + lap * 160 - pulse)
+        case .downwind, .baseTurn, .finalApproach, .final, .goAround, .initialClimb, .departureTurn, .departureClimb:
+            return max(400, base + lap * 900 + pulse)
+        default:
+            return max(400, base + lap * 2_200 + pulse)
+        }
+    }
+
+    private static func verticalRate(for phase: FlightTrack.Phase, lap: Int) -> Int {
+        switch phase {
+        case .downwind, .baseTurn, .finalApproach, .final:
+            return -720 - lap * 70
+        case .landingFlare:
+            return -180
+        case .touchdown, .rollout, .takeoffRoll, .taxi, .taxiIn, .taxiOut, .lineUp, .landed:
+            return 0
+        case .rotation:
+            return 1_100 + lap * 80
+        case .initialClimb, .departureTurn, .departureClimb, .takeoff, .climb:
+            return 1_800 + lap * 90
+        case .holding:
+            return 0
+        case .descent:
+            return -900 - lap * 90
+        case .goAround:
+            return 2_400 + lap * 110
+        case .pushback, .cruise:
+            return 0
+        }
+    }
+
+    private static func route(
+        for phase: FlightTrack.Phase,
+        callsign: String,
+        airport: Airport,
+        origin: String,
+        destination: String,
+        aircraftCoordinate: (latitude: Double, longitude: Double)
+    ) -> FlightRoute {
+        let runwayID = airport.runways.first?.id ?? "Active Runway"
+        let runway = FlightWaypoint(
+            id: "\(callsign)-runway",
+            name: runwayID,
+            kind: .runway,
+            latitude: airport.latitude,
+            longitude: airport.longitude,
+            altitudeFeet: 0,
+            speedKnots: phase.family == .arrival ? 135 : 145,
+            phaseHint: phase
+        )
+        let aircraftPoint = FlightWaypoint(
+            id: "\(callsign)-active",
+            name: phase.displayName,
+            kind: waypointKind(for: phase),
+            latitude: aircraftCoordinate.latitude,
+            longitude: aircraftCoordinate.longitude,
+            altitudeFeet: nil,
+            speedKnots: nil,
+            phaseHint: phase
+        )
+        let outerFix = FlightWaypoint(
+            id: "\(callsign)-fix",
+            name: phase.family == .departure ? "DEP FIX" : "ARR FIX",
+            kind: phase == .holding ? .hold : .fix,
+            latitude: aircraftCoordinate.latitude + (phase.family == .departure ? 0.28 : -0.22),
+            longitude: aircraftCoordinate.longitude + (phase.family == .departure ? 0.22 : -0.18),
+            altitudeFeet: phase.family == .departure ? 12_000 : 6_000,
+            speedKnots: phase.family == .departure ? 280 : 210,
+            phaseHint: phase.family == .departure ? .climb : .descent
+        )
+
+        let waypoints: [FlightWaypoint]
+        switch phase.family {
+        case .surface, .departure:
+            waypoints = [runway, aircraftPoint, outerFix]
+        case .arrival, .recovery:
+            waypoints = [outerFix, aircraftPoint, runway]
+        case .enroute:
+            waypoints = [outerFix, aircraftPoint]
+        }
+
+        return FlightRoute(
+            name: "\(origin)-\(destination)",
+            activeWaypointID: aircraftPoint.id,
+            waypoints: waypoints
+        )
+    }
+
+    private static func waypointKind(for phase: FlightTrack.Phase) -> FlightWaypoint.Kind {
+        switch phase {
+        case .pushback:
+            return .gate
+        case .taxi, .taxiIn, .taxiOut, .lineUp, .takeoffRoll, .rollout, .landed:
+            return .taxiway
+        case .touchdown, .rotation:
+            return .runway
+        case .holding:
+            return .hold
+        case .goAround:
+            return .vector
+        default:
+            return .fix
+        }
     }
 
     private static func coordinate(from airport: Airport, eastNM: Double, northNM: Double) -> (latitude: Double, longitude: Double) {
@@ -154,7 +290,7 @@ struct SampleAviationDataProvider: FlightDataProvider {
                 while !Task.isCancelled {
                     try? await Task.sleep(for: .milliseconds(900))
                     tick += 1
-                    for flight in SampleData.flights(for: airport, tick: tick).prefix(18) {
+                    for flight in SampleData.flights(for: airport, tick: tick).prefix(12) {
                         continuation.yield(.flightUpsert(flight))
                     }
                     continuation.yield(.heartbeat(Date()))

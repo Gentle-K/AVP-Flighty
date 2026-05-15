@@ -1,6 +1,7 @@
 import RealityKit
 import SwiftUI
 import UIKit
+import simd
 
 struct ImmersiveAirspaceView: View {
     @EnvironmentObject private var model: DigitalTowerModel
@@ -106,27 +107,49 @@ private final class FlightSceneCoordinator {
     private let globeRoot = Entity()
     private let labelRoot = Entity()
     private let cinematicRoot = Entity()
+    private let orientationTestRoot = Entity()
 
     private var didInstall = false
-    private var didStartCinematic = false
+    private var didBuildOrientationTestScene = false
     private var lastAirportID: String?
-    private var aircraftEntities: [String: Entity] = [:]
+    private var lastTrailSceneSignature: String?
+    private var lastSpawnValidationSignature: String?
+    private var trailEntities: [String: Entity] = [:]
+    private var trailHistories: [String: [SIMD3<Float>]] = [:]
+    private let sceneStartDate = Date()
 
-    private let aircraftFactory = AircraftEntityFactory()
+    private let aircraftFactory = AircraftModelFactory()
+    private lazy var aircraftPool = AircraftEntityPool(factory: aircraftFactory)
     private let airportFactory = AirportSceneFactory()
     private let trailFactory = TrailEntityFactory()
     private let weatherFactory = WeatherLayerFactory()
+    private let routeEngine = FlightRouteEngine()
+
+    private struct AircraftSceneUpdate {
+        let flight: FlightTrack
+        let entity: Entity
+        let position: SIMD3<Float>
+        let yaw: Float
+        let scale: Float
+        let isSelected: Bool
+    }
 
     func update(model: DigitalTowerModel) {
         installIfNeeded()
+        if model.isAircraftOrientationTestSceneEnabled {
+            updateForOrientationTestScene()
+            return
+        }
+        orientationTestRoot.isEnabled = false
         rebuildStaticSceneIfNeeded(for: model.selectedAirport)
         updateVisibility(for: model)
         syncAircraft(model: model)
         syncTrails(model: model)
         syncLabels(model: model)
 
-        if model.isCinematicFlybyEnabled, !didStartCinematic {
-            startOpeningCinematic()
+        if !cinematicRoot.children.isEmpty {
+            cinematicRoot.isEnabled = false
+            cinematicRoot.removeAllChildren()
         }
     }
 
@@ -149,6 +172,9 @@ private final class FlightSceneCoordinator {
             if candidate.name.hasPrefix("flight-") {
                 return String(candidate.name.dropFirst("flight-".count))
             }
+            if candidate.name.hasPrefix("Aircraft_") {
+                return String(candidate.name.dropFirst("Aircraft_".count))
+            }
             current = candidate.parent
         }
         return nil
@@ -159,7 +185,7 @@ private final class FlightSceneCoordinator {
         didInstall = true
 
         root.name = "Digital Tower Full Immersive Airspace"
-        for child in [skyRoot, airportRoot, trailRoot, trafficRoot, weatherRoot, globeRoot, labelRoot, cinematicRoot] {
+        for child in [skyRoot, airportRoot, trailRoot, trafficRoot, weatherRoot, globeRoot, labelRoot, cinematicRoot, orientationTestRoot] {
             root.addChild(child)
         }
 
@@ -171,6 +197,8 @@ private final class FlightSceneCoordinator {
         globeRoot.name = "Traffic Globe"
         labelRoot.name = "Context Labels"
         cinematicRoot.name = "Opening Cinematic"
+        orientationTestRoot.name = "AircraftOrientationTestScene"
+        orientationTestRoot.isEnabled = false
 
         skyRoot.addChild(AirspaceEnvironmentFactory.makeSkyEnvironment())
         globeRoot.addChild(AirspaceEnvironmentFactory.makeGlobe())
@@ -181,6 +209,13 @@ private final class FlightSceneCoordinator {
         lastAirportID = airport.id
         airportRoot.removeAllChildren()
         weatherRoot.removeAllChildren()
+        trailRoot.removeAllChildren()
+        trafficRoot.removeAllChildren()
+        aircraftPool.removeAll()
+        trailEntities.removeAll()
+        trailHistories.removeAll()
+        lastTrailSceneSignature = nil
+        lastSpawnValidationSignature = nil
         airportRoot.addChild(airportFactory.makeAirportScene(for: airport))
         weatherRoot.addChild(weatherFactory.makeWeatherScene())
     }
@@ -199,96 +234,232 @@ private final class FlightSceneCoordinator {
         trailRoot.transform = airportRoot.transform
         trafficRoot.transform = airportRoot.transform
         weatherRoot.transform = airportRoot.transform
+        labelRoot.transform = airportRoot.transform
+    }
+
+    private func updateForOrientationTestScene() {
+        skyRoot.isEnabled = true
+        airportRoot.isEnabled = false
+        trafficRoot.isEnabled = false
+        trailRoot.isEnabled = false
+        weatherRoot.isEnabled = false
+        globeRoot.isEnabled = false
+        labelRoot.isEnabled = false
+        cinematicRoot.isEnabled = false
+        orientationTestRoot.isEnabled = true
+
+        guard !didBuildOrientationTestScene else { return }
+        didBuildOrientationTestScene = true
+        orientationTestRoot.removeAllChildren()
+        if let scene = AircraftOrientationTestScene(factory: aircraftFactory).makeScene() {
+            orientationTestRoot.addChild(scene)
+        }
     }
 
     private func transformForAirport(mode: ExperienceMode) -> Transform {
         switch mode {
         case .skyPortal:
-            return Transform(scale: SIMD3<Float>(repeating: 0.56), translation: SIMD3<Float>(0, 0.18, -1.55))
+            return Transform(
+                scale: SIMD3<Float>(repeating: 0.74),
+                rotation: simd_quatf(angle: -0.22, axis: SIMD3<Float>(0, 1, 0)),
+                translation: SIMD3<Float>(0, 0.24, -1.28)
+            )
         case .digitalTower:
-            return Transform(scale: SIMD3<Float>(repeating: 1), translation: SIMD3<Float>(0, 0.05, -1.35))
+            return Transform(
+                scale: SIMD3<Float>(repeating: 1.1),
+                rotation: simd_quatf(angle: -0.34, axis: SIMD3<Float>(0, 1, 0)),
+                translation: SIMD3<Float>(0.02, 0.38, -1.22)
+            )
         case .nearbySky:
-            return Transform(scale: SIMD3<Float>(repeating: 1.1), translation: SIMD3<Float>(0, 0.08, -1.1))
+            return Transform(scale: SIMD3<Float>(repeating: 1.1), translation: SIMD3<Float>(0, 0.28, -1.1))
         case .flightChase:
-            return Transform(scale: SIMD3<Float>(repeating: 0.9), translation: SIMD3<Float>(0, 0.05, -1.2))
+            return Transform(scale: SIMD3<Float>(repeating: 0.9), translation: SIMD3<Float>(0, 0.24, -1.2))
         case .globe:
             return Transform(scale: SIMD3<Float>(repeating: 0.7), translation: SIMD3<Float>(0, 0.18, -1.55))
         case .replay:
-            return Transform(scale: SIMD3<Float>(repeating: 0.9), translation: SIMD3<Float>(0, 0.05, -1.35))
+            return Transform(scale: SIMD3<Float>(repeating: 0.95), translation: SIMD3<Float>(0, 0.28, -1.35))
         }
     }
 
     private func syncAircraft(model: DigitalTowerModel) {
-        let flights = Array(model.flights.prefix(model.aircraftDensity.visibleLimit))
+        let flights = visibleFlights(from: model, limit: model.aircraftDensity.visibleLimit)
         let validIDs = Set(flights.map(\.id))
         let selectedID = model.selectedFlight?.id
-        let converter = FlightSceneCoordinateConverter(
-            airport: model.selectedAirport,
-            preset: model.sceneScalePreset,
-            verticalExaggeration: Float(model.verticalExaggeration)
-        )
+        let elapsed = Date().timeIntervalSince(sceneStartDate)
         let selectedBase = selectedID.flatMap { id in
-            flights.first(where: { $0.id == id }).map { converter.position(for: $0) }
+            flights.firstIndex { $0.id == id }.map { routeEngine.state(for: flights[$0], index: $0, elapsed: elapsed).position }
         }
 
-        for id in Array(aircraftEntities.keys) where !validIDs.contains(id) {
-            aircraftEntities[id]?.removeFromParent()
-            aircraftEntities[id] = nil
-        }
+        aircraftPool.removeEntities(excluding: validIDs)
+
+        var updates: [AircraftSceneUpdate] = []
+        updates.reserveCapacity(flights.count)
 
         for (index, flight) in flights.enumerated() {
-            let entity = aircraftEntities[flight.id] ?? aircraftFactory.makeAircraftEntity(id: flight.id)
+            guard let entity = aircraftPool.entity(for: flight) else { continue }
             if entity.parent == nil {
                 trafficRoot.addChild(entity)
             }
-            aircraftEntities[flight.id] = entity
 
             let isSelected = flight.id == selectedID
+            let routeState = routeEngine.state(for: flight, index: index, elapsed: elapsed)
             let position = scenePosition(
                 for: flight,
                 index: index,
-                converter: converter,
+                base: routeState.position,
                 selectedBase: selectedBase,
                 mode: model.experienceMode,
                 selectedID: selectedID
             )
             let scale = aircraftScale(for: flight, mode: model.experienceMode, isSelected: isSelected)
-            let rotation = simd_quatf(angle: FlightSceneCoordinateConverter.headingToYaw(degrees: flight.headingDegrees), axis: SIMD3<Float>(0, 1, 0))
-            let transform = Transform(scale: SIMD3<Float>(repeating: scale), rotation: rotation, translation: position)
+            let yaw = model.experienceMode == .globe
+                ? FlightSceneCoordinateConverter.headingToYaw(degrees: flight.headingDegrees)
+                : routeState.yaw
 
-            aircraftFactory.update(entity, flight: flight, isSelected: isSelected, isDimmed: selectedID != nil && !isSelected && model.experienceMode == .flightChase)
-            entity.move(to: transform, relativeTo: trafficRoot, duration: 0.82, timingFunction: .easeInOut)
+            aircraftFactory.update(entity, flight: flight, isSelected: isSelected || flight.phase.isDemoHighlighted, isDimmed: selectedID != nil && !isSelected && model.experienceMode == .flightChase)
+            updates.append(AircraftSceneUpdate(flight: flight, entity: entity, position: position, yaw: yaw, scale: scale, isSelected: isSelected))
+        }
+
+        let separatedUpdates = separatedAircraftUpdates(updates)
+        let visibleIDs = Set(separatedUpdates.map { $0.flight.id })
+        for update in updates {
+            update.entity.isEnabled = visibleIDs.contains(update.flight.id)
+        }
+        validateSpawnSeparationIfNeeded(updates: separatedUpdates, model: model)
+
+        for update in separatedUpdates {
+            let transform = AircraftRuntimeTransform.makeTransform(
+                position: update.position,
+                yaw: update.yaw,
+                scale: update.scale
+            )
+            update.entity.move(to: transform, relativeTo: trafficRoot, duration: 0.74, timingFunction: .easeInOut)
+        }
+    }
+
+    private func separatedAircraftUpdates(_ updates: [AircraftSceneUpdate]) -> [AircraftSceneUpdate] {
+        var accepted: [AircraftSceneUpdate] = []
+        accepted.reserveCapacity(updates.count)
+
+        for update in updates {
+            let minimumDistance = minimumSpawnDistance(for: update)
+            let isSeparated = accepted.allSatisfy { other in
+                horizontalDistance(update.position, other.position) >= max(minimumDistance, minimumSpawnDistance(for: other))
+            }
+
+            if isSeparated {
+                accepted.append(update)
+            }
+        }
+
+        return Array(accepted.prefix(8))
+    }
+
+    private func minimumSpawnDistance(for update: AircraftSceneUpdate) -> Float {
+        update.flight.phase.isRunwayCritical ? 2.0 : 1.5
+    }
+
+    private func horizontalDistance(_ lhs: SIMD3<Float>, _ rhs: SIMD3<Float>) -> Float {
+        let delta = SIMD2<Float>(lhs.x - rhs.x, lhs.z - rhs.z)
+        return simd_length(delta)
+    }
+
+    private func validateSpawnSeparationIfNeeded(updates: [AircraftSceneUpdate], model: DigitalTowerModel) {
+        let signature = ([model.selectedAirport.id, model.experienceMode.rawValue] + updates.map { $0.flight.id }).joined(separator: "|")
+        guard signature != lastSpawnValidationSignature else { return }
+        lastSpawnValidationSignature = signature
+
+        var hasOverlap = false
+        for firstIndex in updates.indices {
+            for secondIndex in updates.indices where secondIndex > firstIndex {
+                let required = max(minimumSpawnDistance(for: updates[firstIndex]), minimumSpawnDistance(for: updates[secondIndex]))
+                if horizontalDistance(updates[firstIndex].position, updates[secondIndex].position) < required {
+                    hasOverlap = true
+                }
+            }
+        }
+
+        if hasOverlap {
+            print("Spawn validation adjusted: \(updates.count) aircraft visible after overlap filtering")
+        } else {
+            print("Spawn validation passed: \(updates.count) aircraft, no overlaps")
         }
     }
 
     private func syncTrails(model: DigitalTowerModel) {
-        trailRoot.removeAllChildren()
-        guard model.trailLength > 0.21 else { return }
+        guard model.trailLength > 0.21 else {
+            for entity in trailEntities.values {
+                entity.isEnabled = false
+            }
+            return
+        }
 
-        let converter = FlightSceneCoordinateConverter(
-            airport: model.selectedAirport,
-            preset: model.sceneScalePreset,
-            verticalExaggeration: Float(model.verticalExaggeration)
-        )
-        let flights = Array(model.flights.prefix(min(model.aircraftDensity.visibleLimit, 28)))
-        let selectedBase = model.selectedFlight.flatMap { selected in converter.position(for: selected) }
+        let flights = visibleFlights(from: model, limit: model.aircraftDensity.visibleLimit)
+            .filter { aircraftPool.isEntityVisible(id: $0.id) }
+        let validIDs = Set(flights.map(\.id))
+        let elapsed = Date().timeIntervalSince(sceneStartDate)
+        let selectedBase = model.selectedFlight.flatMap { selected in
+            flights.firstIndex { $0.id == selected.id }.map { routeEngine.state(for: flights[$0], index: $0, elapsed: elapsed).position }
+        }
+        let sceneSignature = [
+            model.selectedAirport.id,
+            model.sceneScalePreset.rawValue,
+            model.experienceMode.rawValue,
+            String(format: "%.2f", model.verticalExaggeration),
+            model.selectedFlight?.id ?? "none"
+        ].joined(separator: "|")
+
+        if lastTrailSceneSignature != sceneSignature {
+            trailHistories.removeAll()
+            lastTrailSceneSignature = sceneSignature
+        }
+
+        for id in Array(trailEntities.keys) where !validIDs.contains(id) {
+            trailEntities[id]?.removeFromParent()
+            trailEntities[id] = nil
+            trailHistories[id] = nil
+        }
 
         for (index, flight) in flights.enumerated() {
+            let routeState = routeEngine.state(for: flight, index: index, elapsed: elapsed)
             let position = scenePosition(
                 for: flight,
                 index: index,
-                converter: converter,
+                base: routeState.position,
                 selectedBase: selectedBase,
                 mode: model.experienceMode,
                 selectedID: model.selectedFlight?.id
             )
-            let trail = trailFactory.makeTrail(
+            var history = trailHistories[flight.id] ?? []
+            if let last = history.last {
+                if simd_distance(last, position) > 0.018 {
+                    history.append(position)
+                } else {
+                    history[history.count - 1] = position
+                }
+            } else {
+                history.append(position)
+            }
+            let maxHistory = flight.phase.trailPointLimit
+            if history.count > maxHistory {
+                history.removeFirst(history.count - maxHistory)
+            }
+            trailHistories[flight.id] = history
+
+            let trail = trailEntities[flight.id] ?? trailFactory.makeTrailEntity(id: flight.id)
+            if trail.parent == nil {
+                trailRoot.addChild(trail)
+            }
+            trailEntities[flight.id] = trail
+            trailFactory.updateTrail(
+                trail,
                 for: flight,
-                from: position,
+                history: history,
+                futurePath: routeEngine.futureSamples(for: flight, index: index, elapsed: elapsed, count: flight.phase.futureSampleCount),
                 lengthFactor: Float(model.trailLength),
-                isHighlighted: model.selectedFlight?.id == flight.id || model.experienceMode == .replay
+                isHighlighted: model.selectedFlight?.id == flight.id || flight.phase.isDemoHighlighted || model.experienceMode == .replay,
+                showFuturePath: model.selectedFlight?.id == flight.id || flight.phase.isDemoHighlighted || index < 5
             )
-            trailRoot.addChild(trail)
         }
     }
 
@@ -296,71 +467,86 @@ private final class FlightSceneCoordinator {
         labelRoot.removeAllChildren()
         guard labelRoot.isEnabled else { return }
 
-        let converter = FlightSceneCoordinateConverter(
-            airport: model.selectedAirport,
-            preset: model.sceneScalePreset,
-            verticalExaggeration: Float(model.verticalExaggeration)
-        )
+        let elapsed = Date().timeIntervalSince(sceneStartDate)
         let selectedID = model.selectedFlight?.id
+        let visibleFlights = visibleFlights(from: model, limit: model.aircraftDensity.visibleLimit)
+            .filter { aircraftPool.isEntityVisible(id: $0.id) || $0.id == selectedID }
         let selectedBase = selectedID.flatMap { id in
-            model.flights.first(where: { $0.id == id }).map { converter.position(for: $0) }
+            visibleFlights.firstIndex { $0.id == id }.map { routeEngine.state(for: visibleFlights[$0], index: $0, elapsed: elapsed).position }
         }
-        let limit: Int
-        switch model.labelDensity {
-        case .minimal:
-            limit = selectedID == nil ? 0 : 1
-        case .focused:
-            limit = 8
-        case .expanded:
-            limit = 18
+        var roleLabels: [FlightTrack] = []
+        var usedRoles = Set<DefaultLabelRole>()
+        for flight in visibleFlights {
+            guard let role = flight.phase.defaultLabelRole, !usedRoles.contains(role) else { continue }
+            roleLabels.append(flight)
+            usedRoles.insert(role)
         }
-
-        let labeledFlights = Array(model.flights.prefix(limit)).filter { model.labelDensity != .minimal || $0.id == selectedID }
         let selectedExtra = model.selectedFlight.map { [$0] } ?? []
-        let uniqueFlights = Array((labeledFlights + selectedExtra).reduce(into: [String: FlightTrack]()) { result, flight in
+        let uniqueFlights = Array((roleLabels + selectedExtra).reduce(into: [String: FlightTrack]()) { result, flight in
             result[flight.id] = flight
         }.values)
+            .filter { $0.id == selectedID || $0.phase.defaultLabelRole != nil }
+            .sorted { $0.phase.priority > $1.phase.priority }
+            .prefix(5)
 
         for (index, flight) in uniqueFlights.enumerated() {
             let isSelected = flight.id == selectedID
+            let routeIndex = visibleFlights.firstIndex { $0.id == flight.id } ?? index
+            let routeState = routeEngine.state(for: flight, index: routeIndex, elapsed: elapsed)
             let position = scenePosition(
                 for: flight,
-                index: index,
-                converter: converter,
+                index: routeIndex,
+                base: routeState.position,
                 selectedBase: selectedBase,
                 mode: model.experienceMode,
                 selectedID: selectedID
             )
-            let text = isSelected ? "\(flight.callsign)\n\(flight.altitudeFeet.formatted()) ft  \(flight.speedKnots) kt" : "\(flight.callsign)\n\(flight.altitudeFeet.formatted()) ft"
+            let text = "\(flight.callsign)  \(flight.phase.phaseBadge)\n\(routeState.altitudeFeet.formatted()) ft  \(routeState.speedKnots) kt"
             let label = AirspaceEnvironmentFactory.makeTextPanel(
                 text,
-                width: 0.72,
-                fontSize: isSelected ? 0.043 : 0.032,
+                width: isSelected ? 0.64 : 0.48,
+                fontSize: isSelected ? 0.03 : 0.024,
                 color: isSelected ? .white : UIColor.white.withAlphaComponent(0.86),
-                backing: isSelected ? UIColor.systemCyan.withAlphaComponent(0.18) : UIColor.black.withAlphaComponent(0.14)
+                backing: flight.phase.sceneColor.withAlphaComponent(isSelected ? 0.30 : 0.22)
             )
-            label.position = position + SIMD3<Float>(0.07, isSelected ? 0.18 : 0.11, 0.02)
+            label.position = position + labelOffset(for: flight.phase, isSelected: isSelected)
+            label.orientation = billboardYaw(for: label.position)
             labelRoot.addChild(label)
+        }
+    }
+
+    private func labelOffset(for phase: FlightTrack.Phase, isSelected: Bool) -> SIMD3<Float> {
+        let lift: Float = isSelected ? 0.18 : 0.13
+        switch phase.defaultLabelRole {
+        case .landing:
+            return SIMD3<Float>(-0.34, lift, 0.03)
+        case .takeoff:
+            return SIMD3<Float>(0.34, lift, 0.04)
+        case .holding:
+            return SIMD3<Float>(-0.18, lift, 0.08)
+        case .goAround:
+            return SIMD3<Float>(-0.30, lift, 0.02)
+        case .none:
+            return SIMD3<Float>(0.22, lift, 0.04)
         }
     }
 
     private func scenePosition(
         for flight: FlightTrack,
         index: Int,
-        converter: FlightSceneCoordinateConverter,
+        base: SIMD3<Float>,
         selectedBase: SIMD3<Float>?,
         mode: ExperienceMode,
         selectedID: String?
     ) -> SIMD3<Float> {
-        let base = converter.position(for: flight)
         switch mode {
         case .skyPortal:
-            return SIMD3<Float>(base.x * 0.58, base.y * 0.72 + 0.12, base.z * 0.58)
+            return SIMD3<Float>(base.x * 0.72, base.y * 0.78 + 0.08, base.z * 0.72)
         case .digitalTower:
             return base
         case .nearbySky:
             let offset = Float(index % 5) * 0.035
-            return SIMD3<Float>(base.x * 1.08 + offset, base.y + 0.18, base.z * 1.08)
+            return SIMD3<Float>(base.x * 1.04 + offset, base.y + 0.12, base.z * 1.04)
         case .flightChase:
             guard let selectedBase else { return base }
             if flight.id == selectedID {
@@ -387,56 +573,74 @@ private final class FlightSceneCoordinator {
     }
 
     private func aircraftScale(for flight: FlightTrack, mode: ExperienceMode, isSelected: Bool) -> Float {
-        if isSelected { return mode == .flightChase ? 2.4 : 1.45 }
+        if isSelected { return mode == .flightChase ? 1.85 : 1.18 }
+        let typeScale: Float = 1
+        let phaseBoost: Float = flight.phase.isDemoHighlighted ? 1.08 : 0.82
         switch mode {
-        case .skyPortal: return 0.86
-        case .digitalTower: return flight.phase == .final ? 1.15 : 1
-        case .nearbySky: return 1.24
-        case .flightChase: return 0.78
-        case .globe: return 0.55
-        case .replay: return 0.95
+        case .skyPortal: return 0.78 * typeScale * phaseBoost
+        case .digitalTower: return 0.86 * typeScale * phaseBoost
+        case .nearbySky: return 1.0 * typeScale * phaseBoost
+        case .flightChase: return 0.66 * typeScale
+        case .globe: return 0.42 * typeScale
+        case .replay: return 0.82 * typeScale * phaseBoost
         }
     }
 
-    private func startOpeningCinematic() {
-        didStartCinematic = true
-        cinematicRoot.removeAllChildren()
-        let hero = aircraftFactory.makeDetailedAircraftEntity(id: "hero-flyby")
-        hero.name = "hero-cinematic-aircraft"
-        hero.scale = SIMD3<Float>(repeating: 4.2)
-        hero.position = SIMD3<Float>(-2.2, 1.04, -1.55)
-        hero.orientation = simd_quatf(angle: .pi * 0.54, axis: SIMD3<Float>(0, 1, 0))
-        aircraftFactory.updateHero(hero)
-        cinematicRoot.addChild(hero)
+    private func billboardYaw(for position: SIMD3<Float>) -> simd_quatf {
+        let direction = SIMD3<Float>(-position.x, 0, -1.2 - position.z)
+        let yaw = atan2(direction.x, direction.z) + .pi
+        return simd_quatf(angle: yaw, axis: SIMD3<Float>(0, 1, 0))
+    }
 
-        let title = AirspaceEnvironmentFactory.makeTextPanel(
-            "Digital Tower\nFull Immersive Airspace",
-            width: 1.2,
-            fontSize: 0.052,
-            color: .white,
-            backing: UIColor.black.withAlphaComponent(0.12)
-        )
-        title.position = SIMD3<Float>(-0.58, 1.34, -1.18)
-        cinematicRoot.addChild(title)
+    private func visibleFlights(from model: DigitalTowerModel, limit: Int) -> [FlightTrack] {
+        let targetLimit = min(max(limit, 1), 8)
+        let rolePhaseGroups: [[FlightTrack.Phase]] = [
+            [.finalApproach, .final, .landingFlare],
+            [.takeoffRoll, .rotation, .takeoff, .initialClimb],
+            [.goAround],
+            [.holding]
+        ]
+        let backgroundPhaseGroups: [[FlightTrack.Phase]] = [
+            [.descent, .downwind, .baseTurn],
+            [.departureClimb, .climb],
+            [.cruise],
+            [.cruise]
+        ]
+        var selected: [FlightTrack] = []
+        var usedIDs = Set<String>()
 
-        let wave = AirspaceEnvironmentFactory.makeLine(
-            from: SIMD3<Float>(-1.9, 0.92, -1.36),
-            to: SIMD3<Float>(-0.7, 0.96, -1.2),
-            thickness: 0.018,
-            color: UIColor.systemCyan.withAlphaComponent(0.18),
-            name: "engine-wave-placeholder"
-        )
-        cinematicRoot.addChild(wave)
-
-        var target = hero.transform
-        target.translation = SIMD3<Float>(2.25, 0.96, -1.05)
-        target.rotation = simd_quatf(angle: .pi * 0.38, axis: SIMD3<Float>(0, 1, 0))
-        hero.move(to: target, relativeTo: cinematicRoot, duration: 8.5, timingFunction: .easeInOut)
-
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(13))
-            cinematicRoot.isEnabled = false
+        for group in rolePhaseGroups {
+            guard let flight = firstAvailableFlight(from: model.flights, phases: group, usedIDs: usedIDs) else { continue }
+            selected.append(flight)
+            usedIDs.insert(flight.id)
         }
+
+        if let selectedFlight = model.selectedFlight, !usedIDs.contains(selectedFlight.id) {
+            selected.insert(selectedFlight, at: 0)
+            usedIDs.insert(selectedFlight.id)
+        }
+
+        for group in backgroundPhaseGroups where selected.count < targetLimit {
+            guard let flight = firstAvailableFlight(from: model.flights, phases: group, usedIDs: usedIDs) else { continue }
+            selected.append(flight)
+            usedIDs.insert(flight.id)
+        }
+
+        for flight in model.flights where selected.count < targetLimit && !usedIDs.contains(flight.id) && !flight.phase.isRunwayCritical {
+            selected.append(flight)
+            usedIDs.insert(flight.id)
+        }
+
+        return Array(selected.prefix(targetLimit))
+    }
+
+    private func firstAvailableFlight(from flights: [FlightTrack], phases: [FlightTrack.Phase], usedIDs: Set<String>) -> FlightTrack? {
+        for phase in phases {
+            if let flight = flights.first(where: { $0.phase == phase && !usedIDs.contains($0.id) }) {
+                return flight
+            }
+        }
+        return nil
     }
 
     private func attachmentPlacement(for id: ImmersiveAttachment, model: DigitalTowerModel) -> (position: SIMD3<Float>, yaw: Float, scale: Float, isVisible: Bool) {
@@ -454,6 +658,60 @@ private final class FlightSceneCoordinator {
         case .onboarding:
             return (SIMD3<Float>(0, 1.55, -1.2), 0, 1, model.shouldShowOnboardingHints)
         }
+    }
+}
+
+private enum AircraftRuntimeTransform {
+    static func levelYawOrientation(_ yaw: Float) -> simd_quatf {
+        simd_quatf(angle: yaw, axis: SIMD3<Float>(0, 1, 0))
+    }
+
+    static func makeTransform(position: SIMD3<Float>, yaw: Float, scale: Float) -> Transform {
+        Transform(
+            scale: SIMD3<Float>(repeating: scale),
+            rotation: levelYawOrientation(yaw),
+            translation: position
+        )
+    }
+}
+
+@MainActor
+private struct AircraftOrientationTestScene {
+    let factory: AircraftModelFactory
+
+    func makeScene() -> Entity? {
+        let scene = Entity()
+        scene.name = "AircraftOrientationTestSceneRoot"
+
+        let placements: [(id: String, label: String, position: SIMD3<Float>, headingDegrees: Float)] = [
+            ("orientation-north", "NORTH 0 deg", SIMD3<Float>(-3, 1, 0), 0),
+            ("orientation-east", "EAST 90 deg", SIMD3<Float>(0, 1, -3), 90),
+            ("orientation-south", "SOUTH 180 deg", SIMD3<Float>(3, 1, 0), 180),
+            ("orientation-west", "WEST 270 deg", SIMD3<Float>(0, 1, 3), 270)
+        ]
+
+        for placement in placements {
+            guard let aircraft = factory.makeAircraftEntity(id: placement.id) else {
+                return nil
+            }
+            aircraft.position = placement.position
+            aircraft.orientation = AircraftRuntimeTransform.levelYawOrientation(placement.headingDegrees * .pi / 180)
+            aircraft.scale = SIMD3<Float>(repeating: 1)
+            scene.addChild(aircraft)
+
+            let label = AirspaceEnvironmentFactory.makeTextPanel(
+                placement.label,
+                width: 0.34,
+                fontSize: 0.024,
+                color: .white,
+                backing: UIColor.black.withAlphaComponent(0.2)
+            )
+            label.name = "orientation-label-\(placement.id)"
+            label.position = placement.position + SIMD3<Float>(0, 0.22, 0)
+            scene.addChild(label)
+        }
+
+        return scene
     }
 }
 
@@ -487,196 +745,555 @@ private struct FlightSceneCoordinateConverter {
     }
 }
 
-@MainActor
-private struct AircraftEntityFactory {
-    func makeDetailedAircraftEntity(id: String) -> Entity {
-        let wrapper = Entity()
-        wrapper.name = "flight-\(id)"
+private struct RunwaySceneLayout {
+    let runwayStartZ: Float
+    let runwayEndZ: Float
+    let runwayY: Float
+    let touchdownZ: Float
+    let holdCenter: SIMD3<Float>
 
-        if let asset = loadAircraftAsset() {
-            asset.entity.name = "asset-airbus-a380"
-            asset.entity.scale = SIMD3<Float>(repeating: asset.scale)
-            asset.entity.position = SIMD3<Float>(0, 0, 0)
-            wrapper.addChild(asset.entity)
-        } else {
-            let fallback = makeAircraftEntity(id: id)
-            for child in Array(fallback.children) {
-                child.removeFromParent()
-                wrapper.addChild(child)
-            }
+    static let standard = RunwaySceneLayout(
+        runwayStartZ: -0.82,
+        runwayEndZ: 0.82,
+        runwayY: 0.018,
+        touchdownZ: -0.34,
+        holdCenter: SIMD3<Float>(-1.36, 0.88, 0.56)
+    )
+
+    var approachThreshold: SIMD3<Float> {
+        SIMD3<Float>(0, runwayY, runwayStartZ)
+    }
+
+    var departureEnd: SIMD3<Float> {
+        SIMD3<Float>(0, runwayY, runwayEndZ)
+    }
+}
+
+private struct FlightRouteEngine {
+    struct State {
+        let position: SIMD3<Float>
+        let previousPosition: SIMD3<Float>
+        let futurePath: [SIMD3<Float>]
+        let yaw: Float
+        let altitudeFeet: Int
+        let speedKnots: Int
+
+        var orientation: simd_quatf {
+            AircraftRuntimeTransform.levelYawOrientation(yaw)
+        }
+    }
+
+    private struct RouteDefinition {
+        let points: [SIMD3<Float>]
+        let progressRange: ClosedRange<Float>
+        let loop: Bool
+        let speedRange: (start: Float, end: Float)
+    }
+
+    private let runway = RunwaySceneLayout.standard
+
+    func state(for flight: FlightTrack, index: Int, elapsed: TimeInterval) -> State {
+        if flight.phase == .holding {
+            return holdingState(for: flight, index: index, elapsed: elapsed)
+        }
+        if flight.phase == .cruise {
+            return cruiseState(for: flight, index: index, elapsed: elapsed)
         }
 
-        let leftLight = ModelEntity(
-            mesh: .generateSphere(radius: 0.028),
-            materials: [SimpleMaterial(color: UIColor.systemGreen.withAlphaComponent(0.94), roughness: 0.18, isMetallic: false)]
+        let definition = routeDefinition(for: flight, index: index)
+        let progress = routeProgress(for: flight, definition: definition, elapsed: elapsed)
+        let previousProgress = max(definition.progressRange.lowerBound, progress - 0.018)
+        let nextProgress = min(definition.progressRange.upperBound, progress + 0.018)
+        let position = sample(definition.points, progress: progress, loop: definition.loop)
+        let previous = sample(definition.points, progress: previousProgress, loop: definition.loop)
+        let next = sample(definition.points, progress: nextProgress, loop: definition.loop)
+        let yaw = levelYaw(from: previous, to: next, fallbackDegrees: flight.headingDegrees)
+
+        let speed = interpolatedValue(definition.speedRange, progress: localProgress(progress, in: definition.progressRange))
+        return State(
+            position: position,
+            previousPosition: previous,
+            futurePath: futureSamples(for: flight, index: index, elapsed: elapsed, count: flight.phase.futureSampleCount),
+            yaw: yaw,
+            altitudeFeet: max(0, Int(position.y * 6_600)),
+            speedKnots: max(0, Int(speed))
         )
-        leftLight.name = "asset-nav-left"
-        leftLight.position = SIMD3<Float>(-0.72, 0.02, -0.02)
-        wrapper.addChild(leftLight)
+    }
 
-        let rightLight = ModelEntity(
-            mesh: .generateSphere(radius: 0.028),
-            materials: [SimpleMaterial(color: UIColor.systemRed.withAlphaComponent(0.94), roughness: 0.18, isMetallic: false)]
+    func futureSamples(for flight: FlightTrack, index: Int, elapsed: TimeInterval, count: Int) -> [SIMD3<Float>] {
+        guard count > 1 else { return [] }
+        if flight.phase == .holding {
+            return holdingSamples(for: flight, index: index, elapsed: elapsed, count: count)
+        }
+        if flight.phase == .cruise {
+            return cruiseSamples(for: flight, index: index, elapsed: elapsed, count: count)
+        }
+
+        let definition = routeDefinition(for: flight, index: index)
+        let start = routeProgress(for: flight, definition: definition, elapsed: elapsed)
+        let maxProgress = definition.loop ? start + 0.32 : min(1, start + flight.phase.futureProgressSpan)
+        return (0..<count).map { sampleIndex in
+            let t = Float(sampleIndex) / Float(max(1, count - 1))
+            let progress = start + (maxProgress - start) * t
+            return sample(definition.points, progress: definition.loop ? fractional(progress) : min(max(progress, 0), 1), loop: definition.loop)
+        }
+    }
+
+    private func routeDefinition(for flight: FlightTrack, index: Int) -> RouteDefinition {
+        let lateral = flight.phase.isDemoHighlighted ? 0 : Float((stableHash(flight.id) % 7) - 3) * 0.055
+        switch flight.phase.family {
+        case .arrival:
+            return arrivalDefinition(for: flight, lateral: lateral)
+        case .departure, .surface:
+            return departureDefinition(for: flight, lateral: lateral)
+        case .recovery:
+            return goAroundDefinition(lateral: lateral)
+        case .enroute:
+            return cruiseDefinition(index: index, id: flight.id)
+        }
+    }
+
+    private func arrivalDefinition(for flight: FlightTrack, lateral: Float) -> RouteDefinition {
+        let points = [
+            SIMD3<Float>(lateral, 0.78, -1.78),
+            SIMD3<Float>(lateral, 0.48, -1.24),
+            SIMD3<Float>(lateral * 0.45, 0.20, -0.78),
+            SIMD3<Float>(0.00, 0.07, -0.54),
+            SIMD3<Float>(0.00, 0.03, runway.touchdownZ),
+            SIMD3<Float>(0.00, runway.runwayY, -0.14),
+            SIMD3<Float>(0.00, runway.runwayY, 0.42),
+            SIMD3<Float>(0.18, runway.runwayY, 0.72)
+        ]
+
+        let range: ClosedRange<Float>
+        let speed: (start: Float, end: Float)
+        switch flight.phase {
+        case .descent, .downwind:
+            range = 0.05...0.30
+            speed = (250, 205)
+        case .baseTurn:
+            range = 0.25...0.48
+            speed = (220, 175)
+        case .finalApproach, .final:
+            range = 0.00...0.96
+            speed = (178, 42)
+        case .landingFlare:
+            range = 0.50...0.72
+            speed = (148, 132)
+        case .touchdown:
+            range = 0.66...0.80
+            speed = (132, 104)
+        case .rollout, .taxiIn, .landed:
+            range = 0.78...0.98
+            speed = (96, 32)
+        default:
+            range = 0.12...0.62
+            speed = (230, 150)
+        }
+        return RouteDefinition(points: points, progressRange: range, loop: false, speedRange: speed)
+    }
+
+    private func departureDefinition(for flight: FlightTrack, lateral: Float) -> RouteDefinition {
+        let points = [
+            SIMD3<Float>(0.00, runway.runwayY, -0.72),
+            SIMD3<Float>(0.00, runway.runwayY, -0.34),
+            SIMD3<Float>(0.00, runway.runwayY, 0.04),
+            SIMD3<Float>(0.00, 0.07, 0.28),
+            SIMD3<Float>(0.12 + lateral, 0.22, 0.54),
+            SIMD3<Float>(0.42 + lateral, 0.48, 0.82),
+            SIMD3<Float>(0.88 + lateral, 0.76, 0.98),
+            SIMD3<Float>(1.36 + lateral, 1.02, 0.84)
+        ]
+
+        let range: ClosedRange<Float>
+        let speed: (start: Float, end: Float)
+        switch flight.phase {
+        case .taxiOut, .lineUp:
+            range = 0.00...0.16
+            speed = (18, 35)
+        case .takeoffRoll, .takeoff:
+            range = 0.00...1.00
+            speed = (35, 290)
+        case .rotation:
+            range = 0.40...0.52
+            speed = (138, 164)
+        case .initialClimb:
+            range = 0.52...0.70
+            speed = (168, 214)
+        case .departureTurn:
+            range = 0.68...0.86
+            speed = (210, 245)
+        case .departureClimb, .climb:
+            range = 0.82...1.00
+            speed = (245, 300)
+        default:
+            range = 0.10...0.62
+            speed = (50, 210)
+        }
+        return RouteDefinition(points: points, progressRange: range, loop: false, speedRange: speed)
+    }
+
+    private func goAroundDefinition(lateral: Float) -> RouteDefinition {
+        RouteDefinition(
+            points: [
+                SIMD3<Float>(0.00, 0.26, -1.02),
+                SIMD3<Float>(0.00, 0.18, -0.76),
+                SIMD3<Float>(0.02, 0.30, -0.56),
+                SIMD3<Float>(-0.28 + lateral, 0.56, -0.28),
+                SIMD3<Float>(-0.86 + lateral, 0.82, -0.08),
+                SIMD3<Float>(-1.42 + lateral, 1.00, -0.34)
+            ],
+            progressRange: 0.00...1.00,
+            loop: false,
+            speedRange: (170, 245)
         )
-        rightLight.name = "asset-nav-right"
-        rightLight.position = SIMD3<Float>(0.72, 0.02, -0.02)
-        wrapper.addChild(rightLight)
+    }
 
-        let wake = ModelEntity(
-            mesh: .generateBox(size: SIMD3<Float>(0.055, 0.03, 1.05)),
-            materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.28), roughness: 0.7, isMetallic: false)]
+    private func cruiseDefinition(index: Int, id: String) -> RouteDefinition {
+        let seed = Float(stableHash(id) % 360) * .pi / 180
+        let radius = 1.55 + Float(index % 4) * 0.18
+        let y = 0.76 + Float(index % 5) * 0.14
+        let points = (0..<8).map { pointIndex -> SIMD3<Float> in
+            let angle = seed + Float(pointIndex) / 8 * .pi * 2
+            return SIMD3<Float>(cos(angle) * radius, y + sin(angle * 2) * 0.08, sin(angle) * radius)
+        }
+        return RouteDefinition(points: points, progressRange: 0...1, loop: true, speedRange: (290, 430))
+    }
+
+    private func routeProgress(for flight: FlightTrack, definition: RouteDefinition, elapsed: TimeInterval) -> Float {
+        let span = definition.progressRange.upperBound - definition.progressRange.lowerBound
+        guard span > 0 else { return definition.progressRange.lowerBound }
+        if !definition.loop, flight.phase.isDemoHighlighted {
+            let moving = min(1, Float(elapsed) * flight.phase.routePace + flight.phase.demoProgressOffset)
+            let eased = flight.phase.usesGentleEasing ? smoothstep(moving) : moving
+            return definition.progressRange.lowerBound + span * eased
+        }
+        let seed = Float(stableHash(flight.id) % 1_000) / 1_000
+        let pace = flight.phase.routePace
+        let moving = fractional(Float(elapsed) * pace + seed * 0.25 + Float(flight.progress) * 0.35)
+        let eased = flight.phase.usesGentleEasing ? smoothstep(moving) : moving
+        return definition.progressRange.lowerBound + span * eased
+    }
+
+    private func holdingState(for flight: FlightTrack, index: Int, elapsed: TimeInterval) -> State {
+        let progress = fractional(Float(elapsed) * 0.035 + Float(stableHash(flight.id) % 100) / 100)
+        let position = holdingPosition(progress: progress, index: index)
+        let previous = holdingPosition(progress: fractional(progress - 0.012), index: index)
+        let next = holdingPosition(progress: fractional(progress + 0.012), index: index)
+        let yaw = levelYaw(from: previous, to: next, fallbackDegrees: flight.headingDegrees)
+        return State(
+            position: position,
+            previousPosition: previous,
+            futurePath: holdingSamples(for: flight, index: index, elapsed: elapsed, count: flight.phase.futureSampleCount),
+            yaw: yaw,
+            altitudeFeet: 7_500 + index * 80,
+            speedKnots: 205
         )
-        wake.name = "asset-engine-wake"
-        wake.position = SIMD3<Float>(0, -0.01, 0.72)
-        wrapper.addChild(wake)
-
-        wrapper.components.set(InputTargetComponent())
-        wrapper.components.set(CollisionComponent(shapes: [.generateBox(size: SIMD3<Float>(1.8, 0.52, 2.2))]))
-        return wrapper
     }
 
-    func makeAircraftEntity(id: String) -> Entity {
-        let entity = Entity()
-        entity.name = "flight-\(id)"
-
-        let body = ModelEntity(mesh: .generateBox(size: SIMD3<Float>(0.055, 0.055, 0.24)))
-        body.name = "aircraft-fuselage"
-        body.position = SIMD3<Float>(0, 0, 0)
-
-        let nose = ModelEntity(mesh: .generateSphere(radius: 0.036))
-        nose.name = "aircraft-nose"
-        nose.position = SIMD3<Float>(0, 0.003, -0.125)
-
-        let wings = ModelEntity(mesh: .generateBox(size: SIMD3<Float>(0.33, 0.014, 0.055)))
-        wings.name = "aircraft-wings"
-        wings.position = SIMD3<Float>(0, 0, -0.015)
-
-        let tail = ModelEntity(mesh: .generateBox(size: SIMD3<Float>(0.13, 0.016, 0.04)))
-        tail.name = "aircraft-tailplane"
-        tail.position = SIMD3<Float>(0, 0.018, 0.11)
-
-        let verticalTail = ModelEntity(mesh: .generateBox(size: SIMD3<Float>(0.032, 0.1, 0.045)))
-        verticalTail.name = "aircraft-tail"
-        verticalTail.position = SIMD3<Float>(0, 0.048, 0.105)
-
-        let leftLight = ModelEntity(mesh: .generateSphere(radius: 0.015))
-        leftLight.name = "nav-left"
-        leftLight.position = SIMD3<Float>(-0.18, 0, -0.02)
-
-        let rightLight = ModelEntity(mesh: .generateSphere(radius: 0.015))
-        rightLight.name = "nav-right"
-        rightLight.position = SIMD3<Float>(0.18, 0, -0.02)
-
-        let contrail = ModelEntity(mesh: .generateBox(size: SIMD3<Float>(0.028, 0.018, 0.62)))
-        contrail.name = "aircraft-contrail"
-        contrail.position = SIMD3<Float>(0, 0, 0.42)
-
-        for child in [body, nose, wings, tail, verticalTail, leftLight, rightLight, contrail] {
-            entity.addChild(child)
-        }
-
-        entity.components.set(InputTargetComponent())
-        entity.components.set(CollisionComponent(shapes: [.generateBox(size: SIMD3<Float>(0.42, 0.18, 0.9))]))
-        return entity
-    }
-
-    func update(_ entity: Entity, flight: FlightTrack, isSelected: Bool, isDimmed: Bool) {
-        let tint = tintColor(for: flight, isSelected: isSelected)
-        let alpha: CGFloat = isDimmed ? 0.28 : 0.92
-        let bodyMaterial = SimpleMaterial(color: tint.withAlphaComponent(alpha), roughness: 0.32, isMetallic: true)
-        let wingMaterial = SimpleMaterial(color: UIColor.white.withAlphaComponent(isDimmed ? 0.25 : 0.84), roughness: 0.28, isMetallic: true)
-        let trailMaterial = SimpleMaterial(color: tint.withAlphaComponent(isDimmed ? 0.06 : 0.24), roughness: 0.62, isMetallic: false)
-
-        for child in entity.children {
-            guard let model = child as? ModelEntity else { continue }
-            switch child.name {
-            case "aircraft-fuselage", "aircraft-nose":
-                model.model?.materials = [bodyMaterial]
-            case "nav-left":
-                model.model?.materials = [SimpleMaterial(color: UIColor.systemGreen.withAlphaComponent(alpha), roughness: 0.2, isMetallic: false)]
-            case "nav-right":
-                model.model?.materials = [SimpleMaterial(color: UIColor.systemRed.withAlphaComponent(alpha), roughness: 0.2, isMetallic: false)]
-            case "aircraft-contrail":
-                model.model?.materials = [trailMaterial]
-            default:
-                model.model?.materials = [wingMaterial]
-            }
+    private func holdingSamples(for flight: FlightTrack, index: Int, elapsed: TimeInterval, count: Int) -> [SIMD3<Float>] {
+        let start = fractional(Float(elapsed) * 0.035 + Float(stableHash(flight.id) % 100) / 100)
+        return (0..<count).map { sampleIndex in
+            holdingPosition(progress: fractional(start + Float(sampleIndex) / Float(max(1, count - 1)) * 0.52), index: index)
         }
     }
 
-    func updateHero(_ entity: Entity) {
-        for child in Array(entity.children) {
-            guard let model = child as? ModelEntity else { continue }
-            if child.name == "aircraft-contrail" {
-                model.model?.materials = [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.34), roughness: 0.6, isMetallic: false)]
-            } else if child.name.contains("nav") {
-                model.model?.materials = [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.92), roughness: 0.2, isMetallic: false)]
-            } else {
-                model.model?.materials = [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.96), roughness: 0.22, isMetallic: true)]
-            }
+    private func holdingPosition(progress: Float, index: Int) -> SIMD3<Float> {
+        let center = runway.holdCenter + SIMD3<Float>(0, Float(index % 3) * 0.035, 0)
+        let angle = progress * .pi * 2
+        return center + SIMD3<Float>(cos(angle) * 0.46, sin(angle * 2) * 0.025, sin(angle) * 0.28)
+    }
+
+    private func cruiseState(for flight: FlightTrack, index: Int, elapsed: TimeInterval) -> State {
+        let definition = cruiseDefinition(index: index, id: flight.id)
+        let progress = fractional(Float(elapsed) * 0.012 + Float(stableHash(flight.id) % 100) / 100)
+        let position = sample(definition.points, progress: progress, loop: true)
+        let previous = sample(definition.points, progress: fractional(progress - 0.014), loop: true)
+        let next = sample(definition.points, progress: fractional(progress + 0.014), loop: true)
+        return State(
+            position: position,
+            previousPosition: previous,
+            futurePath: cruiseSamples(for: flight, index: index, elapsed: elapsed, count: flight.phase.futureSampleCount),
+            yaw: levelYaw(from: previous, to: next, fallbackDegrees: flight.headingDegrees),
+            altitudeFeet: flight.altitudeFeet,
+            speedKnots: flight.speedKnots
+        )
+    }
+
+    private func cruiseSamples(for flight: FlightTrack, index: Int, elapsed: TimeInterval, count: Int) -> [SIMD3<Float>] {
+        let definition = cruiseDefinition(index: index, id: flight.id)
+        let start = fractional(Float(elapsed) * 0.012 + Float(stableHash(flight.id) % 100) / 100)
+        return (0..<count).map { sampleIndex in
+            sample(definition.points, progress: fractional(start + Float(sampleIndex) / Float(max(1, count - 1)) * 0.18), loop: true)
         }
     }
 
-    private func loadAircraftAsset() -> (entity: Entity, scale: Float)? {
-        if let glbURL = Bundle.main.url(forResource: "airbus_a380full_interior_hd", withExtension: "glb"),
-           let entity = try? Entity.load(contentsOf: glbURL) {
-            return (entity, 0.012)
-        }
-
-        if let glbURL = Bundle.main.url(forResource: "airbus_a380full_interior_hd", withExtension: "glb", subdirectory: "Models"),
-           let entity = try? Entity.load(contentsOf: glbURL) {
-            return (entity, 0.012)
-        }
-
-        if let usdzURL = Bundle.main.url(forResource: "A380ExteriorLite", withExtension: "usdz"),
-           let entity = try? Entity.load(contentsOf: usdzURL) {
-            return (entity, 0.84)
-        }
-
-        if let usdzURL = Bundle.main.url(forResource: "A380ExteriorLite", withExtension: "usdz", subdirectory: "Models"),
-           let entity = try? Entity.load(contentsOf: usdzURL) {
-            return (entity, 0.84)
-        }
-
-        return nil
+    private func sample(_ points: [SIMD3<Float>], progress: Float, loop: Bool) -> SIMD3<Float> {
+        guard points.count > 1 else { return points.first ?? .zero }
+        let clamped = loop ? fractional(progress) : min(max(progress, 0), 1)
+        let segmentCount = loop ? points.count : points.count - 1
+        let scaled = clamped * Float(segmentCount)
+        let index = min(Int(floor(scaled)), segmentCount - 1)
+        let localT = scaled - Float(index)
+        let p0 = point(points, at: index - 1, loop: loop)
+        let p1 = point(points, at: index, loop: loop)
+        let p2 = point(points, at: index + 1, loop: loop)
+        let p3 = point(points, at: index + 2, loop: loop)
+        return catmullRom(p0, p1, p2, p3, t: smoothstep(localT))
     }
 
-    private func tintColor(for flight: FlightTrack, isSelected: Bool) -> UIColor {
-        if isSelected { return .white }
-        switch flight.category {
-        case .cargo:
-            return .systemYellow
-        case .privateJet:
-            return .systemPurple
-        case .commercial:
-            let palette: [UIColor] = [.systemCyan, .systemGreen, .systemOrange, .systemBlue]
-            return palette[abs(flight.id.unicodeScalars.reduce(0) { $0 + Int($1.value) }) % palette.count]
-        case .unknown:
-            return .systemBlue
+    private func point(_ points: [SIMD3<Float>], at index: Int, loop: Bool) -> SIMD3<Float> {
+        if loop {
+            let wrapped = (index % points.count + points.count) % points.count
+            return points[wrapped]
         }
+        return points[min(max(index, 0), points.count - 1)]
+    }
+
+    private func catmullRom(_ p0: SIMD3<Float>, _ p1: SIMD3<Float>, _ p2: SIMD3<Float>, _ p3: SIMD3<Float>, t: Float) -> SIMD3<Float> {
+        let t2 = t * t
+        let t3 = t2 * t
+        let a = p1 * 2.0
+        let b = (p2 - p0) * t
+        let c = (p0 * 2.0 - p1 * 5.0 + p2 * 4.0 - p3) * t2
+        let d = (-p0 + p1 * 3.0 - p2 * 3.0 + p3) * t3
+        return (a + b + c + d) * 0.5
+    }
+
+    private func localProgress(_ progress: Float, in range: ClosedRange<Float>) -> Float {
+        let span = max(0.001, range.upperBound - range.lowerBound)
+        return min(max((progress - range.lowerBound) / span, 0), 1)
+    }
+
+    private func interpolatedValue(_ range: (start: Float, end: Float), progress: Float) -> Float {
+        range.start + (range.end - range.start) * min(max(progress, 0), 1)
+    }
+
+    private func stableHash(_ value: String) -> Int {
+        value.unicodeScalars.reduce(0) { (($0 << 5) &+ $0) &+ Int($1.value) }
+    }
+
+    private func levelYaw(from previous: SIMD3<Float>, to next: SIMD3<Float>, fallbackDegrees: Int) -> Float {
+        let dx = next.x - previous.x
+        let dz = next.z - previous.z
+        let horizontalLength = sqrt(dx * dx + dz * dz)
+        guard horizontalLength > 0.0001 else {
+            return FlightSceneCoordinateConverter.headingToYaw(degrees: fallbackDegrees)
+        }
+        return atan2(dx, dz)
+    }
+
+    private func fractional(_ value: Float) -> Float {
+        let raw = value - floor(value)
+        return raw < 0 ? raw + 1 : raw
+    }
+
+    private func smoothstep(_ value: Float) -> Float {
+        let x = min(max(value, 0), 1)
+        return x * x * (3 - 2 * x)
     }
 }
 
 @MainActor
 private struct TrailEntityFactory {
-    func makeTrail(for flight: FlightTrack, from position: SIMD3<Float>, lengthFactor: Float, isHighlighted: Bool) -> Entity {
+    func makeTrailEntity(id: String) -> Entity {
         let group = Entity()
-        group.name = "trail-\(flight.id)"
+        group.name = "trail-\(id)"
+        let ribbon = ModelEntity()
+        ribbon.name = "trail-ribbon"
+        group.addChild(ribbon)
+        return group
+    }
 
-        let yaw = FlightSceneCoordinateConverter.headingToYaw(degrees: flight.headingDegrees)
-        let behind = SIMD3<Float>(-sin(yaw), -0.02, cos(yaw))
-        let color = (isHighlighted ? UIColor.white : UIColor.systemCyan).withAlphaComponent(isHighlighted ? 0.38 : 0.18)
-        let segmentCount = isHighlighted ? 5 : 3
-
-        for segment in 0..<segmentCount {
-            let startDistance = Float(segment) * 0.18 * lengthFactor
-            let endDistance = startDistance + 0.14 * lengthFactor
-            let from = position + behind * startDistance
-            let to = position + behind * endDistance + SIMD3<Float>(0, -Float(segment) * 0.01, 0)
-            group.addChild(AirspaceEnvironmentFactory.makeLine(from: from, to: to, thickness: isHighlighted ? 0.014 : 0.009, color: color, name: "trail-segment"))
+    func updateTrail(
+        _ entity: Entity,
+        for flight: FlightTrack,
+        history: [SIMD3<Float>],
+        futurePath: [SIMD3<Float>],
+        lengthFactor: Float,
+        isHighlighted: Bool,
+        showFuturePath: Bool
+    ) {
+        entity.isEnabled = true
+        for child in Array(entity.children) where child.name.hasPrefix("future-route-") {
+            child.removeFromParent()
         }
 
-        return group
+        let yaw = headingYaw(from: history) ?? FlightSceneCoordinateConverter.headingToYaw(degrees: flight.headingDegrees)
+        let syntheticBackfill = makeSyntheticBackfill(from: history.last ?? .zero, yaw: yaw, lengthFactor: lengthFactor)
+        let sourcePoints = history.count >= 2 ? history : syntheticBackfill
+        let maxPoints = max(3, Int((Float(sourcePoints.count) * lengthFactor).rounded(.up)))
+        let points = Array(sourcePoints.suffix(min(sourcePoints.count, maxPoints)))
+        let style = flight.phase.routeVisualStyle
+        let width = style.trailWidth * (isHighlighted ? 0.038 : 0.018)
+
+        guard let mesh = AirspaceTrailMeshFactory.makeTrailMesh(
+            points: points,
+            headingYaw: yaw,
+            baseWidth: width,
+            verticalFade: isHighlighted ? 0.032 : 0.018
+        ) else {
+            entity.isEnabled = false
+            return
+        }
+
+        let tint = tintColor(for: flight, isHighlighted: isHighlighted)
+        let alpha = isHighlighted
+            ? min(0.78, style.trailOpacity * 1.18)
+            : min(0.15, style.trailOpacity)
+        let material = SimpleMaterial(
+            color: tint.withAlphaComponent(alpha),
+            roughness: 0.78,
+            isMetallic: false
+        )
+        if let ribbon = entity.children.first(where: { $0.name == "trail-ribbon" }) as? ModelEntity {
+            ribbon.model = ModelComponent(mesh: mesh, materials: [material])
+        }
+
+        guard showFuturePath, futurePath.count > 1 else { return }
+        let futureColor = style.futureColor.withAlphaComponent(isHighlighted ? style.futureOpacity : min(0.15, style.futureOpacity))
+        for index in 0..<(futurePath.count - 1) where index.isMultiple(of: 2) {
+            let start = futurePath[index]
+            let end = futurePath[index + 1]
+            let delta = end - start
+            let dashStart = start + delta * 0.12
+            let dashEnd = start + delta * 0.62
+            let dash = AirspaceEnvironmentFactory.makeLine(
+                from: dashStart,
+                to: dashEnd,
+                thickness: isHighlighted ? style.futureThickness : min(style.futureThickness, 0.007),
+                color: futureColor,
+                name: "future-route-\(flight.id)-\(index)"
+            )
+            entity.addChild(dash)
+        }
+    }
+
+    private func makeSyntheticBackfill(from position: SIMD3<Float>, yaw: Float, lengthFactor: Float) -> [SIMD3<Float>] {
+        let behind = SIMD3<Float>(-sin(yaw), -0.012, cos(yaw))
+        let count = 7
+        return Array((0..<count).map { index in
+            position + behind * Float(index) * 0.16 * max(0.25, lengthFactor)
+        }.reversed())
+    }
+
+    private func tintColor(for flight: FlightTrack, isHighlighted: Bool) -> UIColor {
+        if isHighlighted { return flight.phase.sceneColor }
+        return flight.phase.routeVisualStyle.color
+    }
+
+    private func headingYaw(from history: [SIMD3<Float>]) -> Float? {
+        guard let last = history.last, let previous = history.dropLast().last else { return nil }
+        let delta = last - previous
+        guard simd_length(delta) > 0.001 else { return nil }
+        return atan2(delta.x, delta.z)
+    }
+}
+
+struct AirspaceTrailGeometry {
+    let positions: [SIMD3<Float>]
+    let normals: [SIMD3<Float>]
+    let indices: [UInt32]
+}
+
+@MainActor
+enum AirspaceTrailMeshFactory {
+    static func makeTrailMesh(points: [SIMD3<Float>], headingYaw: Float, baseWidth: Float, verticalFade: Float) -> MeshResource? {
+        guard let geometry = makeTrailRibbonGeometry(
+            points: points,
+            headingYaw: headingYaw,
+            baseWidth: baseWidth,
+            verticalFade: verticalFade
+        ) else { return nil }
+
+        return makeMesh(name: "TaperedFlightTrail", positions: geometry.positions, normals: geometry.normals, indices: geometry.indices)
+    }
+
+    static func makeTrailRibbonGeometry(points: [SIMD3<Float>], headingYaw: Float, baseWidth: Float, verticalFade: Float) -> AirspaceTrailGeometry? {
+        guard points.count >= 2 else { return nil }
+
+        var positions: [SIMD3<Float>] = []
+        var normals: [SIMD3<Float>] = []
+        var indices: [UInt32] = []
+        positions.reserveCapacity(points.count * 2)
+        normals.reserveCapacity(points.count * 2)
+        indices.reserveCapacity(max(0, points.count - 1) * 6)
+
+        let fallbackSide = SIMD3<Float>(cos(headingYaw), 0, sin(headingYaw))
+        for index in points.indices {
+            let previous = index > points.startIndex ? points[points.index(before: index)] : points[index]
+            let next = index < points.index(before: points.endIndex) ? points[points.index(after: index)] : points[index]
+            let direction = normalizedOrFallback(next - previous, fallback: SIMD3<Float>(-sin(headingYaw), -0.01, cos(headingYaw)))
+            let side = normalizedOrFallback(simd_cross(SIMD3<Float>(0, 1, 0), direction), fallback: fallbackSide)
+            let progress = Float(index) / Float(max(1, points.count - 1))
+            let taper = smoothstep(1 - progress)
+            let width = max(0.002, baseWidth * taper)
+            let sag = SIMD3<Float>(0, -verticalFade * progress * progress, 0)
+            positions.append(points[index] + sag + side * width)
+            positions.append(points[index] + sag - side * width)
+            normals.append(SIMD3<Float>(0, 1, 0))
+            normals.append(SIMD3<Float>(0, 1, 0))
+        }
+
+        for index in 0..<(points.count - 1) {
+            let base = UInt32(index * 2)
+            indices.append(contentsOf: [base, base + 1, base + 2, base + 1, base + 3, base + 2])
+        }
+
+        return AirspaceTrailGeometry(positions: positions, normals: normals, indices: indices)
+    }
+
+    static func makeWakeMesh(length: Float, startWidth: Float, endWidth: Float, verticalDrop: Float) -> MeshResource? {
+        let segments = 7
+        let points = (0..<segments).map { index -> SIMD3<Float> in
+            let progress = Float(index) / Float(segments - 1)
+            return SIMD3<Float>(0, -verticalDrop * progress * progress, progress * length - length * 0.5)
+        }
+
+        var positions: [SIMD3<Float>] = []
+        var normals: [SIMD3<Float>] = []
+        var indices: [UInt32] = []
+
+        for (index, point) in points.enumerated() {
+            let progress = Float(index) / Float(segments - 1)
+            let width = startWidth + (endWidth - startWidth) * smoothstep(progress)
+            positions.append(point + SIMD3<Float>(width, 0, 0))
+            positions.append(point - SIMD3<Float>(width, 0, 0))
+            positions.append(point + SIMD3<Float>(0, width * 0.45, 0))
+            positions.append(point - SIMD3<Float>(0, width * 0.45, 0))
+            normals.append(contentsOf: Array(repeating: SIMD3<Float>(0, 1, 0), count: 4))
+        }
+
+        for index in 0..<(segments - 1) {
+            let base = UInt32(index * 4)
+            indices.append(contentsOf: [
+                base, base + 1, base + 4, base + 1, base + 5, base + 4,
+                base + 2, base + 3, base + 6, base + 3, base + 7, base + 6
+            ])
+        }
+
+        return makeMesh(name: "TaperedAircraftWake", positions: positions, normals: normals, indices: indices)
+    }
+
+    private static func makeMesh(name: String, positions: [SIMD3<Float>], normals: [SIMD3<Float>], indices: [UInt32]) -> MeshResource? {
+        guard positions.count == normals.count, !indices.isEmpty else { return nil }
+        var descriptor = MeshDescriptor(name: name)
+        descriptor.positions = MeshBuffers.Positions(positions)
+        descriptor.normals = MeshBuffers.Normals(normals)
+        descriptor.primitives = .triangles(indices)
+        descriptor.materials = .allFaces(0)
+        return try? MeshResource.generate(from: [descriptor])
+    }
+
+    private static func normalizedOrFallback(_ vector: SIMD3<Float>, fallback: SIMD3<Float>) -> SIMD3<Float> {
+        let length = simd_length(vector)
+        guard length > 0.0001 else { return fallback }
+        return vector / length
+    }
+
+    private static func smoothstep(_ value: Float) -> Float {
+        let x = min(max(value, 0), 1)
+        return x * x * (3 - 2 * x)
     }
 }
 
@@ -687,117 +1304,224 @@ private struct AirportSceneFactory {
         group.name = "airport-\(airport.icao)"
 
         let ground = ModelEntity(
-            mesh: .generateBox(size: SIMD3<Float>(3.2, 0.018, 1.85)),
-            materials: [SimpleMaterial(color: UIColor(red: 0.05, green: 0.14, blue: 0.11, alpha: 0.72), roughness: 0.82, isMetallic: false)]
+            mesh: .generateBox(size: SIMD3<Float>(3.6, 0.018, 2.55)),
+            materials: [SimpleMaterial(color: UIColor(red: 0.055, green: 0.17, blue: 0.18, alpha: 0.82), roughness: 0.86, isMetallic: false)]
         )
         ground.name = "airport-ground"
-        ground.position = SIMD3<Float>(0, -0.035, 0)
+        ground.position = SIMD3<Float>(0, -0.04, -0.05)
         group.addChild(ground)
 
         let towerBase = ModelEntity(
-            mesh: .generateBox(size: SIMD3<Float>(0.12, 0.56, 0.12)),
-            materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.2), roughness: 0.4, isMetallic: true)]
+            mesh: .generateBox(size: SIMD3<Float>(0.08, 0.36, 0.08)),
+            materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.14), roughness: 0.4, isMetallic: true)]
         )
-        towerBase.position = SIMD3<Float>(-1.25, 0.25, 0.55)
+        towerBase.position = SIMD3<Float>(-0.86, 0.16, 0.58)
         group.addChild(towerBase)
 
         let towerCab = ModelEntity(
-            mesh: .generateBox(size: SIMD3<Float>(0.38, 0.16, 0.26)),
-            materials: [SimpleMaterial(color: UIColor.systemCyan.withAlphaComponent(0.34), roughness: 0.22, isMetallic: true)]
+            mesh: .generateBox(size: SIMD3<Float>(0.24, 0.1, 0.18)),
+            materials: [SimpleMaterial(color: UIColor.systemCyan.withAlphaComponent(0.26), roughness: 0.22, isMetallic: true)]
         )
-        towerCab.position = SIMD3<Float>(-1.25, 0.6, 0.55)
+        towerCab.position = SIMD3<Float>(-0.86, 0.38, 0.58)
         group.addChild(towerCab)
 
-        for (index, runway) in airport.runways.prefix(4).enumerated() {
-            let x = -0.54 + Float(index % 2) * 1.05
-            let z = -0.48 + Float(index / 2) * 0.65
-            let angle = index.isMultiple(of: 2) ? Float.pi / 9 : -Float.pi / 7
-            let runwayEntity = makeRunway(id: runway.id, position: SIMD3<Float>(x, 0, z), angle: angle, isActive: runway.status == .active)
-            group.addChild(runwayEntity)
-        }
-
-        group.addChild(makeTrafficCorridors())
+        let runwayID = airport.runways.first?.id.components(separatedBy: " / ").last ?? "27L"
+        group.addChild(makeMainRunway(id: "RWY \(runwayID)"))
+        group.addChild(makeApproachCorridor())
+        group.addChild(makeDepartureCorridor())
+        group.addChild(makeHoldingAndGoAroundContext())
         group.addChild(makeAltitudeRings())
         return group
     }
 
-    private func makeRunway(id: String, position: SIMD3<Float>, angle: Float, isActive: Bool) -> Entity {
+    private func makeMainRunway(id: String) -> Entity {
         let group = Entity()
-        group.position = position
-        group.orientation = simd_quatf(angle: angle, axis: SIMD3<Float>(0, 1, 0))
+        group.name = "main-runway-context"
 
         let runway = ModelEntity(
-            mesh: .generateBox(size: SIMD3<Float>(0.12, 0.014, 1.38)),
-            materials: [SimpleMaterial(color: UIColor(white: 0.06, alpha: 0.92), roughness: 0.7, isMetallic: false)]
+            mesh: .generateBox(size: SIMD3<Float>(0.18, 0.014, 1.68)),
+            materials: [SimpleMaterial(color: UIColor(white: 0.16, alpha: 0.98), roughness: 0.74, isMetallic: false)]
         )
+        runway.name = "runway-surface"
+        runway.position = SIMD3<Float>(0, 0, 0)
         group.addChild(runway)
 
-        for marker in 0..<7 {
+        let touchdown = ModelEntity(
+            mesh: .generateBox(size: SIMD3<Float>(0.21, 0.018, 0.18)),
+            materials: [SimpleMaterial(color: UIColor.systemCyan.withAlphaComponent(0.3), roughness: 0.5, isMetallic: false)]
+        )
+        touchdown.name = "touchdown-zone-highlight"
+        touchdown.position = SIMD3<Float>(0, 0.018, -0.34)
+        group.addChild(touchdown)
+
+        for marker in 0..<11 {
             let stripe = ModelEntity(
-                mesh: .generateBox(size: SIMD3<Float>(0.07, 0.018, 0.06)),
-                materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.76), roughness: 0.4, isMetallic: false)]
+                mesh: .generateBox(size: SIMD3<Float>(0.06, 0.018, 0.052)),
+                materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.9), roughness: 0.36, isMetallic: false)]
             )
-            stripe.position = SIMD3<Float>(0, 0.014, -0.48 + Float(marker) * 0.16)
+            stripe.name = "runway-centerline"
+            stripe.position = SIMD3<Float>(0, 0.018, -0.68 + Float(marker) * 0.135)
             group.addChild(stripe)
         }
 
-        for light in 0..<16 {
-            let z = -0.66 + Float(light) * 0.088
-            for side: Float in [-0.085, 0.085] {
+        for light in 0..<24 {
+            let z = -0.8 + Float(light) * 0.069
+            let pulseAlpha = 0.46 + CGFloat(light % 5) * 0.055
+            let center = ModelEntity(
+                mesh: .generateSphere(radius: 0.011),
+                materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(min(0.92, pulseAlpha + 0.18)), roughness: 0.2, isMetallic: false)]
+            )
+            center.name = "runway-centerline-light"
+            center.position = SIMD3<Float>(0, 0.028, z)
+            group.addChild(center)
+
+            for side: Float in [-0.108, 0.108] {
                 let beacon = ModelEntity(
-                    mesh: .generateSphere(radius: 0.012),
-                    materials: [SimpleMaterial(color: (isActive ? UIColor.systemGreen : UIColor.systemYellow).withAlphaComponent(0.78), roughness: 0.2, isMetallic: false)]
+                    mesh: .generateSphere(radius: 0.013),
+                    materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.32), roughness: 0.2, isMetallic: false)]
                 )
-                beacon.position = SIMD3<Float>(side, 0.025, z)
+                beacon.name = "runway-edge-light"
+                beacon.position = SIMD3<Float>(side, 0.026, z)
                 group.addChild(beacon)
             }
         }
 
-        let text = AirspaceEnvironmentFactory.makeText(id, size: 0.032, color: UIColor.white.withAlphaComponent(0.7), width: 0.32)
-        text.position = SIMD3<Float>(-0.18, 0.035, -0.04)
-        text.orientation = simd_quatf(angle: -angle, axis: SIMD3<Float>(0, 1, 0))
+        for side: Float in [-0.055, 0.0, 0.055] {
+            let threshold = ModelEntity(
+                mesh: .generateBox(size: SIMD3<Float>(0.026, 0.022, 0.08)),
+                materials: [SimpleMaterial(color: UIColor.systemGreen.withAlphaComponent(0.86), roughness: 0.25, isMetallic: false)]
+            )
+            threshold.name = "threshold-light"
+            threshold.position = SIMD3<Float>(side, 0.03, -0.82)
+            group.addChild(threshold)
+        }
+
+        let text = AirspaceEnvironmentFactory.makeText(id, size: 0.038, color: UIColor.white.withAlphaComponent(0.82), width: 0.45)
+        text.position = SIMD3<Float>(-0.31, 0.046, -0.68)
         group.addChild(text)
+
+        let arrow = AirspaceEnvironmentFactory.makeLine(
+            from: SIMD3<Float>(0.19, 0.055, -0.62),
+            to: SIMD3<Float>(0.19, 0.055, 0.54),
+            thickness: 0.01,
+            color: UIColor.white.withAlphaComponent(0.34),
+            name: "runway-flow-arrow"
+        )
+        group.addChild(arrow)
         return group
     }
 
-    private func makeTrafficCorridors() -> Entity {
+    private func makeApproachCorridor() -> Entity {
         let group = Entity()
-        group.name = "approach-and-departure-corridors"
-        let arrivals = [
-            (SIMD3<Float>(-1.45, 0.62, -1.65), SIMD3<Float>(-0.42, 0.08, -0.42)),
-            (SIMD3<Float>(1.35, 0.7, -1.55), SIMD3<Float>(0.48, 0.08, -0.18))
+        group.name = "arrival-approach-corridor"
+        let style = RouteVisualStyle.style(for: .arrivalFinal)
+        let leftRail = [
+            SIMD3<Float>(-0.28, 0.56, -1.72),
+            SIMD3<Float>(-0.18, 0.32, -1.18),
+            SIMD3<Float>(-0.11, 0.09, -0.72)
         ]
-        let departures = [
-            (SIMD3<Float>(-0.48, 0.08, 0.22), SIMD3<Float>(-1.6, 0.84, 1.6)),
-            (SIMD3<Float>(0.54, 0.08, 0.36), SIMD3<Float>(1.65, 0.9, 1.45))
-        ]
+        let rightRail = leftRail.map { SIMD3<Float>(-$0.x, $0.y, $0.z) }
+        group.addChild(AirspaceEnvironmentFactory.makePolyline(points: leftRail, thickness: 0.014, color: style.color.withAlphaComponent(0.42), name: "arrival-guide-rail-left"))
+        group.addChild(AirspaceEnvironmentFactory.makePolyline(points: rightRail, thickness: 0.014, color: style.color.withAlphaComponent(0.42), name: "arrival-guide-rail-right"))
 
-        for pair in arrivals {
-            group.addChild(AirspaceEnvironmentFactory.makeLine(from: pair.0, to: pair.1, thickness: 0.018, color: UIColor.systemGreen.withAlphaComponent(0.24), name: "arrival-corridor"))
+        for step in 0..<13 {
+            let progress = Float(step) / 12
+            let point = SIMD3<Float>(0, 0.56 + (0.045 - 0.56) * progress, -1.72 + (0.82 * progress))
+            let light = ModelEntity(
+                mesh: .generateSphere(radius: 0.011 + progress * 0.006),
+                materials: [SimpleMaterial(color: style.futureColor.withAlphaComponent(0.38 + CGFloat(progress) * 0.32), roughness: 0.25, isMetallic: false)]
+            )
+            light.name = "descending-approach-light"
+            light.position = point
+            group.addChild(light)
         }
 
-        for pair in departures {
-            group.addChild(AirspaceEnvironmentFactory.makeLine(from: pair.0, to: pair.1, thickness: 0.018, color: UIColor.systemBlue.withAlphaComponent(0.24), name: "departure-corridor"))
+        for index in 0..<4 {
+            let color: UIColor = index < 2 ? .systemRed : .systemGreen
+            let papi = ModelEntity(
+                mesh: .generateSphere(radius: 0.012),
+                materials: [SimpleMaterial(color: color.withAlphaComponent(0.82), roughness: 0.18, isMetallic: false)]
+            )
+            papi.name = "glide-slope-indicator"
+            papi.position = SIMD3<Float>(-0.22 + Float(index) * 0.04, 0.035, -0.52)
+            group.addChild(papi)
         }
+        return group
+    }
 
+    private func makeDepartureCorridor() -> Entity {
+        let group = Entity()
+        group.name = "departure-climb-corridor"
+        let style = RouteVisualStyle.style(for: .departureTakeoff)
+        let path = [
+            SIMD3<Float>(0.00, 0.06, -0.08),
+            SIMD3<Float>(0.06, 0.20, 0.36),
+            SIMD3<Float>(0.34, 0.46, 0.80),
+            SIMD3<Float>(0.86, 0.76, 1.02),
+            SIMD3<Float>(1.36, 1.02, 0.92)
+        ]
+        group.addChild(AirspaceEnvironmentFactory.makeDashedPolyline(points: path, thickness: 0.016, color: style.color.withAlphaComponent(0.52), name: "departure-dashed-arc"))
+        for step in 0..<8 {
+            let point = path[min(step / 2, path.count - 1)]
+            let pulse = ModelEntity(
+                mesh: .generateSphere(radius: 0.009 + Float(step % 3) * 0.002),
+                materials: [SimpleMaterial(color: style.color.withAlphaComponent(0.48), roughness: 0.3, isMetallic: false)]
+            )
+            pulse.name = "takeoff-direction-pulse"
+            pulse.position = point + SIMD3<Float>(0, 0.012, Float(step) * 0.035)
+            group.addChild(pulse)
+        }
+        let label = AirspaceEnvironmentFactory.makeText("TAKEOFF", size: 0.032, color: style.color.withAlphaComponent(0.84), width: 0.42)
+        label.position = SIMD3<Float>(0.52, 0.52, 0.78)
+        group.addChild(label)
+        return group
+    }
+
+    private func makeHoldingAndGoAroundContext() -> Entity {
+        let group = Entity()
+        group.name = "holding-and-go-around-context"
+        let holdingStyle = RouteVisualStyle.style(for: .holding)
+        let goAroundStyle = RouteVisualStyle.style(for: .goAround)
+        let runway = RunwaySceneLayout.standard
+        let hold = (0...36).map { index -> SIMD3<Float> in
+            let angle = Float(index) / 36 * .pi * 2
+            return runway.holdCenter + SIMD3<Float>(cos(angle) * 0.46, 0, sin(angle) * 0.28)
+        }
+        group.addChild(AirspaceEnvironmentFactory.makeDashedPolyline(points: hold, thickness: 0.012, color: holdingStyle.color.withAlphaComponent(0.44), name: "holding-pattern-dotted-oval"))
+
+        let missed = [
+            SIMD3<Float>(0.00, 0.26, -1.02),
+            SIMD3<Float>(0.00, 0.18, -0.76),
+            SIMD3<Float>(0.02, 0.30, -0.56),
+            SIMD3<Float>(-0.28, 0.56, -0.28),
+            SIMD3<Float>(-0.86, 0.82, -0.08),
+            SIMD3<Float>(-1.42, 1.00, -0.34)
+        ]
+        group.addChild(AirspaceEnvironmentFactory.makeDashedPolyline(points: missed, thickness: 0.016, color: goAroundStyle.futureColor.withAlphaComponent(0.56), name: "go-around-missed-approach-arc"))
+        let label = AirspaceEnvironmentFactory.makeText("GO AROUND", size: 0.034, color: goAroundStyle.color.withAlphaComponent(0.86), width: 0.48)
+        label.position = SIMD3<Float>(-0.72, 0.74, -0.18)
+        group.addChild(label)
         return group
     }
 
     private func makeAltitudeRings() -> Entity {
         let group = Entity()
         group.name = "altitude-rings"
-        for index in 0..<4 {
-            let y = 0.3 + Float(index) * 0.28
-            let radius = 0.78 + Float(index) * 0.38
+        let style = RouteVisualStyle.style(for: .altitudeRing)
+        let layers: [(String, Float, Float)] = [("1,000 ft", 0.24, 0.72), ("3,000 ft", 0.56, 1.05), ("10,000 ft", 1.08, 1.46)]
+        for (label, y, radius) in layers {
             var previous: SIMD3<Float>?
             for step in 0...40 {
                 let angle = Float(step) / 40 * Float.pi * 2
                 let current = SIMD3<Float>(cos(angle) * radius, y, sin(angle) * radius)
                 if let previous {
-                    group.addChild(AirspaceEnvironmentFactory.makeLine(from: previous, to: current, thickness: 0.004, color: UIColor.white.withAlphaComponent(0.08), name: "altitude-ring"))
+                    group.addChild(AirspaceEnvironmentFactory.makeLine(from: previous, to: current, thickness: 0.0035, color: style.color.withAlphaComponent(0.08), name: "altitude-ring"))
                 }
                 previous = current
             }
+            let text = AirspaceEnvironmentFactory.makeText(label, size: 0.022, color: style.color.withAlphaComponent(0.26), width: 0.3)
+            text.position = SIMD3<Float>(radius + 0.08, y, 0)
+            group.addChild(text)
         }
         return group
     }
@@ -808,7 +1532,7 @@ private struct WeatherLayerFactory {
     func makeWeatherScene() -> Entity {
         let group = Entity()
         group.name = "weather-layers"
-        let colors: [UIColor] = [.systemGreen, .systemYellow, .systemOrange, .systemRed]
+        let colors: [UIColor] = [.systemGreen, .systemTeal, .systemOrange, .systemRed]
         for index in 0..<9 {
             let cell = ModelEntity(
                 mesh: .generateSphere(radius: 0.18 + Float(index % 3) * 0.06),
@@ -828,9 +1552,22 @@ private enum AirspaceEnvironmentFactory {
         let group = Entity()
         group.name = "sky-horizon-environment"
 
+        let keyLight = DirectionalLight()
+        keyLight.name = "cinematic-key-light"
+        keyLight.light = DirectionalLightComponent(color: .white, intensity: 4_200)
+        keyLight.orientation = simd_quatf(angle: -0.72, axis: SIMD3<Float>(1, 0, 0))
+            * simd_quatf(angle: 0.35, axis: SIMD3<Float>(0, 1, 0))
+        group.addChild(keyLight)
+
+        let fillLight = PointLight()
+        fillLight.name = "runway-fill-light"
+        fillLight.light = PointLightComponent(color: UIColor(red: 0.75, green: 0.95, blue: 1, alpha: 1), intensity: 2_200, attenuationRadius: 4.2)
+        fillLight.position = SIMD3<Float>(0.15, 1.0, -0.8)
+        group.addChild(fillLight)
+
         let dome = ModelEntity(
             mesh: .generateSphere(radius: 5.4),
-            materials: [SimpleMaterial(color: UIColor(red: 0.03, green: 0.13, blue: 0.22, alpha: 0.26), roughness: 1, isMetallic: false)]
+            materials: [SimpleMaterial(color: UIColor(red: 0.045, green: 0.18, blue: 0.24, alpha: 0.48), roughness: 1, isMetallic: false)]
         )
         dome.position = SIMD3<Float>(0, 1.05, 0)
         dome.scale = SIMD3<Float>(1, 0.46, 1)
@@ -842,24 +1579,13 @@ private enum AirspaceEnvironmentFactory {
             let radius: Float = 4.4
             let a = SIMD3<Float>(cos(angleA) * radius, -0.16, sin(angleA) * radius)
             let b = SIMD3<Float>(cos(angleB) * radius, -0.16, sin(angleB) * radius)
-            group.addChild(makeLine(from: a, to: b, thickness: 0.01, color: UIColor.white.withAlphaComponent(0.16), name: "curved-horizon"))
-        }
-
-        for index in 0..<14 {
-            let cloud = ModelEntity(
-                mesh: .generateSphere(radius: 0.22 + Float(index % 4) * 0.03),
-                materials: [SimpleMaterial(color: UIColor.white.withAlphaComponent(0.10), roughness: 1, isMetallic: false)]
-            )
-            let angle = Float(index) / 14 * Float.pi * 2
-            cloud.position = SIMD3<Float>(cos(angle) * 2.8, 0.82 + Float(index % 3) * 0.18, sin(angle) * 2.3 - 0.55)
-            cloud.scale = SIMD3<Float>(2.0, 0.24, 0.75)
-            group.addChild(cloud)
+            group.addChild(makeLine(from: a, to: b, thickness: 0.012, color: UIColor.white.withAlphaComponent(0.22), name: "curved-horizon"))
         }
 
         for index in 0..<22 {
             let glow = ModelEntity(
                 mesh: .generateSphere(radius: 0.018 + Float(index % 3) * 0.007),
-                materials: [SimpleMaterial(color: UIColor.systemYellow.withAlphaComponent(0.42), roughness: 0.4, isMetallic: false)]
+                materials: [SimpleMaterial(color: UIColor.systemCyan.withAlphaComponent(0.30), roughness: 0.4, isMetallic: false)]
             )
             let angle = Float(index) / 22 * Float.pi * 2
             glow.position = SIMD3<Float>(cos(angle) * 3.4, -0.1 + Float(index % 2) * 0.04, sin(angle) * 3.4)
@@ -917,6 +1643,29 @@ private enum AirspaceEnvironmentFactory {
         return line
     }
 
+    static func makePolyline(points: [SIMD3<Float>], thickness: Float, color: UIColor, name: String) -> Entity {
+        let group = Entity()
+        group.name = name
+        guard points.count > 1 else { return group }
+        for index in 0..<(points.count - 1) {
+            group.addChild(makeLine(from: points[index], to: points[index + 1], thickness: thickness, color: color, name: "\(name)-segment-\(index)"))
+        }
+        return group
+    }
+
+    static func makeDashedPolyline(points: [SIMD3<Float>], thickness: Float, color: UIColor, name: String) -> Entity {
+        let group = Entity()
+        group.name = name
+        guard points.count > 1 else { return group }
+        for index in 0..<(points.count - 1) where index.isMultiple(of: 2) {
+            let start = points[index]
+            let end = points[index + 1]
+            let delta = end - start
+            group.addChild(makeLine(from: start + delta * 0.08, to: start + delta * 0.68, thickness: thickness, color: color, name: "\(name)-dash-\(index)"))
+        }
+        return group
+    }
+
     static func makeText(_ text: String, size: CGFloat, color: UIColor, width: CGFloat) -> ModelEntity {
         ModelEntity(
             mesh: .generateText(
@@ -955,6 +1704,125 @@ private extension Entity {
         for child in Array(children) {
             child.removeFromParent()
         }
+    }
+}
+
+private enum DefaultLabelRole {
+    case landing
+    case takeoff
+    case holding
+    case goAround
+}
+
+private extension FlightTrack.Phase {
+    var defaultLabelRole: DefaultLabelRole? {
+        switch self {
+        case .finalApproach, .final, .landingFlare, .touchdown, .rollout:
+            return .landing
+        case .takeoffRoll, .rotation, .takeoff, .initialClimb:
+            return .takeoff
+        case .holding:
+            return .holding
+        case .goAround:
+            return .goAround
+        default:
+            return nil
+        }
+    }
+
+    var isRunwayCritical: Bool {
+        switch self {
+        case .finalApproach, .final, .landingFlare, .touchdown, .rollout, .takeoffRoll, .rotation, .takeoff, .initialClimb:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var demoProgressOffset: Float {
+        switch self {
+        case .takeoffRoll, .takeoff:
+            return 0.34
+        case .rotation:
+            return 0.44
+        case .initialClimb:
+            return 0.58
+        case .goAround:
+            return 0.62
+        default:
+            return 0
+        }
+    }
+
+    var phaseBadge: String {
+        switch self {
+        case .finalApproach, .final:
+            return "FINAL"
+        case .landingFlare:
+            return "FLARE"
+        case .touchdown:
+            return "LANDING"
+        case .rollout:
+            return "ROLLOUT"
+        case .takeoffRoll, .takeoff:
+            return "TAKEOFF"
+        case .rotation:
+            return "ROTATE"
+        case .initialClimb, .departureTurn, .departureClimb, .climb:
+            return "CLIMB"
+        case .holding:
+            return "HOLDING"
+        case .goAround:
+            return "GO AROUND"
+        default:
+            return shortLabel
+        }
+    }
+
+    var isDemoHighlighted: Bool {
+        switch self {
+        case .finalApproach, .final, .landingFlare, .touchdown, .rollout, .takeoffRoll, .rotation, .initialClimb, .holding, .goAround:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var usesPersistentDemoLabel: Bool {
+        switch self {
+        case .finalApproach, .takeoffRoll, .holding, .goAround:
+            return true
+        default:
+            return false
+        }
+    }
+
+    var sceneColor: UIColor {
+        routeVisualStyle.color
+    }
+
+    var futureRouteColor: UIColor {
+        routeVisualStyle.futureColor
+    }
+
+    var trailPointLimit: Int {
+        routeVisualStyle.trailPointLimit
+    }
+
+    var futureSampleCount: Int {
+        routeVisualStyle.futureSampleCount
+    }
+
+    var futureProgressSpan: Float {
+        routeVisualStyle.futureProgressSpan
+    }
+
+    var routePace: Float {
+        routeVisualStyle.routePace
+    }
+
+    var usesGentleEasing: Bool {
+        routeVisualStyle.usesGentleEasing
     }
 }
 
@@ -1007,6 +1875,8 @@ private struct ImmersiveModeSwitcher: View {
                 }
                 .buttonStyle(TileButtonStyle(isSelected: model.experienceMode == mode))
                 .help(mode.title)
+                .accessibilityLabel(mode.title)
+                .accessibilityHint(mode.subtitle)
             }
         }
         .glassSurface(cornerRadius: 24, padding: 8)
